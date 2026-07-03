@@ -5,9 +5,13 @@ suppliers, stock levels, and inventory transactions.
 
 ## Team Member
 Cristian Timtim - Repo Lead
+
 Eric Gabariel Diola - Board Lead
+
 Clint James Dagangon - Scribe
+
 Roderick Andoy - Builder
+
 Christian Dheb Nebria - Builder
 
 ## Features
