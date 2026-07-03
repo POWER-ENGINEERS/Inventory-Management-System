@@ -4,11 +4,11 @@ An inventory Management System that helps businesses manage products,
 suppliers, stock levels, and inventory transactions.
 
 ## Team Member
-Cristian Timtim - Repo Lead
-Eric Gabariel Diola - Board Lead
-Clint James Dagangon - Scribe
-Roderick Andoy - Builder
-Christian Dheb Nebria - Builder
+Cristian Pacunla Timtim - Repo Lead
+Eric Gabariel Penkian Diola - Board Lead
+Clint James Ayop Dagangon - Scribe
+Roderick Dayham Andoy - Builder
+Christian Caderao Dheb Nebria - Builder
 
 ## Features
 add Products
