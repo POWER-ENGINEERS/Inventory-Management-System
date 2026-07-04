@@ -17,5 +17,3 @@ delete products
 stock in
 stock out
 inventory reports
-
-Completed by nebria
