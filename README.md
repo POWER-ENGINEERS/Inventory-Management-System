@@ -89,14 +89,14 @@ Backup & Restore: Under Settings -> Backup Database, you can export your entire 
 
 📷 Screenshots
 
-Include screenshots of:
+| Dashboard | Products |
+|-----------|----------|
+| ![](docs/wireframes/Dashboard.png) | ![](docs/wireframes/Products.png) |
 
-Login
-Dashboard
-Products
-Suppliers
-Purchase Orders
-Inventory Movements
-Sales Terminal
-Reports
+| Suppliers | POS |
+|-----------|-----|
+| ![](docs/wireframes/Suppliers.png) | ![](docs/wireframes/Sales%20Terminal%20(POS).png) |
 
+| Reports | Settings |
+|---------|----------|
+| ![](docs/wireframes/Reports%20%26%20Financials.png) | ![](docs/wireframes/Settings.png) |
