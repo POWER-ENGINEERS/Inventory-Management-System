@@ -2,12 +2,15 @@
 ## Project Description
 The Inventory Management System is a web-based application designed to help businesses efficiently manage their inventory operations. It provides tools for managing products, categories, brands, suppliers, customers, employees, purchase orders, stock movements, and sales transactions. The system also generates inventory and sales reports, tracks audit logs, and monitors stock levels to improve accuracy, reduce manual work, and support better business decision-making.
 
-## Team Member
-Cristian Pacunla Timtim - Repo Lead
-Eric Gabariel Penkian Diola - Board Lead
-Clint James Ayop Dagangon - Scribe
-Roderick Dayham Andoy - Builder
-Christian Caderao Dheb Nebria - Builder
+## 👥 Team Members
+
+| Name | Role | Responsibilities |
+|------|------|------------------|
+| **Cristian Pacunla Timtim** | Repository Lead | Managed the GitHub repository, reviewed and merged pull requests, coordinated team collaboration. |
+| **Eric Gabriel Penkian Diola** | Board Lead | Managed the GitHub Project Board, created and organized issues, and tracked task progress. |
+| **Clint James Ayop Dagangon** | Scribe | Prepared project documentation, user stories, backlog, and meeting notes. |
+| **Roderick Dayham Andoy** | Builder | Developed project features, implemented assigned tasks, and contributed code. |
+| **Christian Caderao Dheb Nebria** | Builder | Developed project features, implemented assigned tasks, and contributed code. |
 
 ## ✨ Features
 
