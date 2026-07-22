@@ -93,7 +93,7 @@ Backup & Restore: Under Settings -> Backup Database, you can export your entire 
 
 | Login | Dashboard |
 |-------|-----------|
-| ![](docs/wireframes/Login.png) | ![](docs/wireframes/Dashboard.png) |
+| ![](docs/wireframes/login.png) | ![](docs/wireframes/Dashboard.png) |
 
 | Products | Categories & Brands |
 |----------|----------------------|
