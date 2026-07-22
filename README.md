@@ -1,4 +1,5 @@
 # Inventory-Management-System
+A web-based Inventory Management System developed to help businesses manage products, suppliers, inventory, sales, purchase orders, and reports efficiently.
 ## Project Description
 The Inventory Management System is a web-based application designed to help businesses efficiently manage their inventory operations. It provides tools for managing products, categories, brands, suppliers, customers, employees, purchase orders, stock movements, and sales transactions. The system also generates inventory and sales reports, tracks audit logs, and monitors stock levels to improve accuracy, reduce manual work, and support better business decision-making.
 
