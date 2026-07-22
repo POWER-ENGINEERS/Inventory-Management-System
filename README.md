@@ -119,15 +119,3 @@ Backup & Restore: Under Settings -> Backup Database, you can export your entire 
 |-------------|----------|
 | ![](docs/wireframes/Audit%20Trail.png) | ![](docs/wireframes/Settings.png) |
 
-<h2>📷 System Screenshots</h2>
-
-<table>
-<tr>
-<td align="center"><b>Dashboard</b></td>
-<td align="center"><b>Products</b></td>
-</tr>
-<tr>
-<td><img src="docs/wireframes/Dashboard.png" width="450"></td>
-<td><img src="docs/wireframes/Products.png" width="450"></td>
-</tr>
-</table>
