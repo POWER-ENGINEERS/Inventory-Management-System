@@ -119,3 +119,13 @@ Backup & Restore: Under Settings -> Backup Database, you can export your entire 
 |-------------|----------|
 | ![](docs/wireframes/Audit%20Trail.png) | ![](docs/wireframes/Settings.png) |
 
+🚀 Future Improvements
+Barcode Scanner
+QR Code Support
+Email Notifications
+Supplier Purchase Analytics
+Sales Forecasting
+Multi-Branch Inventory
+Backup & Restore
+Mobile Responsive Design
+
