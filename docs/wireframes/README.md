@@ -7,7 +7,7 @@ These screenshots represent the wireframes/UI designs of the Inventory Managemen
 | Login | Super Admin, Administrator, casher, warehouse staff Login |
 | Dashboard | View Dashboard |
 | Products | Read, add, delete, edit, archieve Products |
-| Categories & Brands | Manage Categories | add brands and categories |
+| Categories & Brands | Manage Categories add brands and categories |
 | Suppliers | Manage, add, edit, delete Suppliers |
 | Purchase Orders | Create, cancel Purchase Order |
 | Receiving (Deliveries) | Receive and process Products |
