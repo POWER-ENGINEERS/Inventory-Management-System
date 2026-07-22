@@ -2,11 +2,7 @@
 
 **Project:** Inventory Management System  
 **Team:** POWER-ENGINEERS  
-**Student:** Cristian Dive Timtim  
-Eric Gabriel Diola
-Clint James Dagangon
-Roderick Andoy Jr.
-Christian Dheb Nebria
+**Student:** Cristian Dive Timtim, Eric Gabriel Diola, Clint James Dagangon, Roderick Andoy Jr., Christian Dheb Nebria
 **Date:** July 2026
 
 ---
