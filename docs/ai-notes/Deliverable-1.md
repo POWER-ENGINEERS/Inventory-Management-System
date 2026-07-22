@@ -2,7 +2,11 @@
 
 **Project:** Inventory Management System  
 **Team:** POWER-ENGINEERS  
-**Student:** Cristian Timtim  
+**Student:** Cristian Dive Timtim  
+Eric Gabriel Diola
+Clint James Dagangon
+Roderick Andoy Jr.
+Christian Dheb Nebria
 **Date:** July 2026
 
 ---
@@ -202,9 +206,3 @@ The AI assistant helped review the project scope, identify missing modules, veri
 The final scope was approved by the team before implementation.
 
 ---
-
-**Prepared by**
-
-Cristian Timtim
-
-POWER-ENGINEERS
