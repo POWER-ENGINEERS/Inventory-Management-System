@@ -12,6 +12,13 @@ The Inventory Management System is a web-based application designed to help busi
 | **Roderick Dayham Andoy** | Builder | Developed project features, implemented assigned tasks, and contributed code. |
 | **Christian Caderao Dheb Nebria** | Builder | Developed project features, implemented assigned tasks, and contributed code. |
 
+🎯 Objectives
+Simplify inventory management.
+Reduce manual record keeping.
+Monitor stock levels in real time.
+Improve inventory accuracy.
+Generate reports for business decisions.
+
 ## ✨ Features
 
 ### 📦 Product Management
@@ -79,4 +86,17 @@ The application currently uses an offline-first Browser localStorage Database En
 Storage Layer: All system records (Products, Categories, Suppliers, Purchase Orders, Stock Movements, Sales, Customers, Employees, Audit Trail, and Settings) are stored as structured JSON in the browser's localStorage.
 Persistence: Your data automatically persists across browser refreshes, tab closes, and computer restarts without requiring an external database server to be installed.
 Backup & Restore: Under Settings -> Backup Database, you can export your entire database as a .json file anytime and restore/import it onto any computer.
+
+📷 Screenshots
+
+Include screenshots of:
+
+Login
+Dashboard
+Products
+Suppliers
+Purchase Orders
+Inventory Movements
+Sales Terminal
+Reports
 
