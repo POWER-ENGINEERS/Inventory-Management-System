@@ -89,14 +89,32 @@ Backup & Restore: Under Settings -> Backup Database, you can export your entire 
 
 📷 Screenshots
 
-| Dashboard | Products |
-|-----------|----------|
-| ![](docs/wireframes/Dashboard.png) | ![](docs/wireframes/Products.png) |
+## 📷 System Screenshots
 
-| Suppliers | POS |
-|-----------|-----|
-| ![](docs/wireframes/Suppliers.png) | ![](docs/wireframes/Sales%20Terminal%20(POS).png) |
+| Login | Dashboard |
+|-------|-----------|
+| ![](docs/wireframes/Login.png) | ![](docs/wireframes/Dashboard.png) |
 
-| Reports | Settings |
-|---------|----------|
-| ![](docs/wireframes/Reports%20%26%20Financials.png) | ![](docs/wireframes/Settings.png) |
+| Products | Categories & Brands |
+|----------|----------------------|
+| ![](docs/wireframes/Products.png) | ![](docs/wireframes/Categories%20%26%20Brands.png) |
+
+| Suppliers | Purchase Orders |
+|-----------|-----------------|
+| ![](docs/wireframes/Suppliers.png) | ![](docs/wireframes/Purchase%20Orders.png) |
+
+| Receiving (Deliveries) | Inventory Movements |
+|------------------------|---------------------|
+| ![](docs/wireframes/Receiving%20(Deliveries).png) | ![](docs/wireframes/Inventory%20Movements.png) |
+
+| Sales Terminal (POS) | Customers |
+|----------------------|-----------|
+| ![](docs/wireframes/Sales%20Terminal%20(POS).png) | ![](docs/wireframes/Customers.png) |
+
+| Employees | Reports & Financials |
+|-----------|----------------------|
+| ![](docs/wireframes/Employees.png) | ![](docs/wireframes/Reports%20%26%20Financials.png) |
+
+| Audit Trail | Settings |
+|-------------|----------|
+| ![](docs/wireframes/Audit%20Trail.png) | ![](docs/wireframes/Settings.png) |
