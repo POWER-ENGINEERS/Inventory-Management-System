@@ -1,0 +1,10 @@
+The Dashboard is the main page of the system that provides users with a quick overview of important business information. It displays key metrics and real-time data to help users monitor inventory, sales, and overall system performance without navigating to different pages.
+Main Functions:
+Displays the total number of products, suppliers, customers, and sales.
+Shows low-stock and out-of-stock product alerts.
+Provides daily, weekly, monthly, or yearly sales summaries.
+Displays recent transactions and activities.
+Shows charts and graphs for sales trends and inventory status.
+Provides quick access to frequently used modules such as Products, Suppliers, POS, Reports, and Settings.
+Displays notifications and important system updates.
+The dashboard helps users make informed decisions by presenting essential business information in a clear, organized, and easy-to-understand interface. It serves as the central hub of the Inventory Management and Point of Sale (POS) System, allowing administrators and staff to monitor operations efficiently.
