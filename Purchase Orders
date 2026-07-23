@@ -1,0 +1,16 @@
+The Purchase Orders module is used to create, manage, and track orders placed with suppliers. It helps ensure that products are restocked efficiently and that all purchasing transactions are properly documented.
+Key Functions:
+Create and send purchase orders to suppliers.
+Select suppliers and add products to an order.
+Specify product quantities, unit prices, and expected delivery dates.
+Track the status of purchase orders (Pending, Approved, Ordered, Received, or Cancelled).
+Receive ordered items and automatically update inventory stock levels.
+View and manage purchase order history.
+Edit or cancel purchase orders before they are completed.
+Generate purchase order reports for auditing and purchasing analysis.
+Benefits:
+Simplifies the purchasing process.
+Prevents stock shortages by managing restocking efficiently.
+Maintains accurate purchasing records.
+Improves supplier coordination and inventory management.
+Reduces manual errors through automated stock updates upon receiving orders.
