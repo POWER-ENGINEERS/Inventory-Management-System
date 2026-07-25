@@ -88,37 +88,6 @@ Storage Layer: All system records (Products, Categories, Suppliers, Purchase Ord
 Persistence: Your data automatically persists across browser refreshes, tab closes, and computer restarts without requiring an external database server to be installed.
 Backup & Restore: Under Settings -> Backup Database, you can export your entire database as a .json file anytime and restore/import it onto any computer.
 
-📷 Screenshots
-
-## 📷 System Screenshots
-
-| Login | Dashboard |
-|-------|-----------|
-| ![](docs/wireframes/login.png) | ![](docs/wireframes/Dashboard.png) |
-
-| Products | Categories & Brands |
-|----------|----------------------|
-| ![](docs/wireframes/Products.png) | ![](docs/wireframes/Categories%20%26%20Brands.png) |
-
-| Suppliers | Purchase Orders |
-|-----------|-----------------|
-| ![](docs/wireframes/Suppliers.png) | ![](docs/wireframes/Purchase%20Orders.png) |
-
-| Receiving (Deliveries) | Inventory Movements |
-|------------------------|---------------------|
-| ![](docs/wireframes/Receiving%20(Deliveries).png) | ![](docs/wireframes/Inventory%20Movements.png) |
-
-| Sales Terminal (POS) | Customers |
-|----------------------|-----------|
-| ![](docs/wireframes/Sales%20Terminal%20(POS).png) | ![](docs/wireframes/Customers.png) |
-
-| Employees | Reports & Financials |
-|-----------|----------------------|
-| ![](docs/wireframes/Employees.png) | ![](docs/wireframes/Reports%20%26%20Financials.png) |
-
-| Audit Trail | Settings |
-|-------------|----------|
-| ![](docs/wireframes/Audit%20Trail.png) | ![](docs/wireframes/Settings.png) |
 
 🚀 Future Improvements
 Barcode Scanner
