@@ -79,6 +79,35 @@ Generate reports for business decisions.
 - Manage system settings
 - Configure business information
 
+## 📷 System Screenshots
+
+| Login | Dashboard |
+|-------|-----------|
+| ![](docs/wireframes/login.png) | ![](docs/wireframes/Dashboard.png) |
+
+| Products | Categories & Brands |
+|----------|----------------------|
+| ![](docs/wireframes/Products.png) | ![](docs/wireframes/Categories%20%26%20Brands.png) |
+
+| Suppliers | Purchase Orders |
+|-----------|-----------------|
+| ![](docs/wireframes/Suppliers.png) | ![](docs/wireframes/Purchase%20Orders.png) |
+
+| Receiving (Deliveries) | Inventory Movements |
+|------------------------|---------------------|
+| ![](docs/wireframes/Receiving%20(Deliveries).png) | ![](docs/wireframes/Inventory%20Movements.png) |
+
+| Sales Terminal (POS) | Customers |
+|----------------------|-----------|
+| ![](docs/wireframes/Sales%20Terminal%20(POS).png) | ![](docs/wireframes/Customers.png) |
+
+| Employees | Reports & Financials |
+|-----------|----------------------|
+| ![](docs/wireframes/Employees.png) | ![](docs/wireframes/Reports%20%26%20Financials.png) |
+
+| Audit Trail | Settings |
+|-------------|----------|
+| ![](docs/wireframes/Audit%20Trail.png) | ![](docs/wireframes/Settings.png) |
   
 ### DATABASE
 The application currently uses an offline-first Browser localStorage Database Engine:
