@@ -19,3 +19,11 @@
 |POST | /suppliers  |     createSupplier
 |PUT | /suppliers/:id |  updateSupplier
 |DELETE | /suppliers/:id |  deleteSupplier
+
+
+## Stock In Routes
+
+| Method | Path | Handler | Story |
+|---|---|---|---|
+|GET  | /stock-ins |    listStockIns
+|GET  | /stock-outs  |  listStockOuts   
