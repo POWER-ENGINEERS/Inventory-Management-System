@@ -29,7 +29,8 @@ GET| /stock-ins | /listStockIns | /Read stock-ins|
 POST| /stock-ins | /createstock-ins | /create stock-ins|
 
 ## Stock Out Routes
-
+| Method | Path | Handler | Story |
+|---|---|---|---|
 GET| /stock-Outs | liststock-Outs | Read stock-Outs|
 POST| /stock-Outs | createstock-Outs | create stock-Outs|
 
