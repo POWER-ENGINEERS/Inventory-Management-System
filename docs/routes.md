@@ -15,15 +15,21 @@
 
 | Method | Path | Handler | Story |
 |---|---|---|---|
-|GET | /suppliers   |    listSuppliers
-|POST | /suppliers  |     createSupplier
-|PUT | /suppliers/:id |  updateSupplier
-|DELETE | /suppliers/:id |  deleteSupplier
+|GET | /suppliers   |    listSuppliers | Read Supplier|
+|POST | /suppliers  |     createSupplier | Create Supplier |
+|PUT | /suppliers/:id |  updateSupplier  | Update suppliers |
+|DELETE | /suppliers/:id |  deleteSupplier  | Delete suppliers |
 
 
 ## Stock In Routes
 
 | Method | Path | Handler | Story |
 |---|---|---|---|
-|GET  | /stock-ins |    listStockIns
-|GET  | /stock-outs  |  listStockOuts   
+GET| /stock-ins | /listStockIns | /Read stock-ins|
+POST| /stock-ins | /createstock-ins | /create stock-ins|
+
+## Stock Out Routes
+
+GET| /stock-Outs | /liststock-Outs | /Read stock-Outs|
+POST| /stock-Outs | /createstock-Outs | /create stock-Outs|
+
