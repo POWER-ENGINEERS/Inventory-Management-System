@@ -30,6 +30,6 @@ POST| /stock-ins | /createstock-ins | /create stock-ins|
 
 ## Stock Out Routes
 
-GET| /stock-Outs | /liststock-Outs | /Read stock-Outs|
-POST| /stock-Outs | /createstock-Outs | /create stock-Outs|
+GET| /stock-Outs | liststock-Outs | Read stock-Outs|
+POST| /stock-Outs | createstock-Outs | create stock-Outs|
 
