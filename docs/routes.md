@@ -9,3 +9,13 @@
 | POST | /products | createProduct | Create a product |
 | PUT | /products/:id | updateProduct | Update product |
 | DELETE | /products/:id | deleteProduct | Delete product |
+
+
+## Supplier Routes
+
+| Method | Path | Handler | Story |
+|---|---|---|---|
+|GET /suppliers   |    listSuppliers
+|POST | /suppliers  |     createSupplier
+|PUT | /suppliers/:id |  updateSupplier
+|DELETE | /suppliers/:id |  deleteSupplier
