@@ -15,7 +15,7 @@
 
 | Method | Path | Handler | Story |
 |---|---|---|---|
-|GET /suppliers   |    listSuppliers
+|GET | /suppliers   |    listSuppliers
 |POST | /suppliers  |     createSupplier
 |PUT | /suppliers/:id |  updateSupplier
 |DELETE | /suppliers/:id |  deleteSupplier
