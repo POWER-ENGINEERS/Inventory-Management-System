@@ -54,5 +54,5 @@ POST| /stock-Outs | createstock-Outs | Record outgoing stock|
 ## Authentication
 | Method | Path | Handler | Story |
 |---|---|---|---|
-|POST|	/auth/login	|login	Login
-|POST|	/auth/logout|	logout	Logout
+|POST|	/auth|login	|login	Login
+|POST|	/auth|logout|	logout	Logout
