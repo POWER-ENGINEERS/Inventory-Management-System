@@ -25,12 +25,18 @@
 
 | Method | Path | Handler | Story |
 |---|---|---|---|
-GET| /stock-ins | /listStockIns | /Read stock-ins|
-POST| /stock-ins | /createstock-ins | /create stock-ins|
+GET| /stock-ins | /listStockIns |View stock-in history|
+POST| /stock-ins | /createstock-ins | Record incoming stock|
 
 ## Stock Out Routes
 | Method | Path | Handler | Story |
 |---|---|---|---|
-GET| /stock-Outs | liststock-Outs | Read stock-Outs|
-POST| /stock-Outs | createstock-Outs | create stock-Outs|
+GET| /stock-Outs | liststock-Outs | View stock-out history|
+POST| /stock-Outs | createstock-Outs | Record outgoing stock|
 
+## Inventory Report
+
+| Method | Path | Handler | Story |
+|---|---|---|---|
+GET	/reports/inventory	showInventoryReport	View inventory report
+GET	/reports/inventory/export
