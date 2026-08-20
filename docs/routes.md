@@ -38,5 +38,21 @@ POST| /stock-Outs | createstock-Outs | Record outgoing stock|
 
 | Method | Path | Handler | Story |
 |---|---|---|---|
-GET	/reports/inventory	showInventoryReport	View inventory report
-GET	/reports/inventory/export
+|GET|/reports/inventory	|showInventoryReport	View inventory report|
+|GET|	/reports/inventory|export|
+
+## Dashboard
+| Method | Path | Handler | Story |
+|---|---|---|---|
+|GET	/dashboard	|showDashboard	|View dashboard|
+
+## Search
+| Method | Path | Handler | Story |
+|---|---|---|---|
+|GET	|/productssearch|	searchProducts|	Search products
+
+## Authentication
+| Method | Path | Handler | Story |
+|---|---|---|---|
+|POST|	/auth/login	|login	Login
+|POST|	/auth/logout|	logout	Logout
