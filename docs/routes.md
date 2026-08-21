@@ -26,33 +26,33 @@
 | Method | Path | Handler | Story |
 |---|---|---|---|
 GET| /stock-ins | listStockIns |View stock-in history|
-POST| /stock-ins | createstock-ins | Record incoming stock|
+POST| /stock-ins | createStockIn | Record incoming stock|
 
 ## Stock Out Routes
 | Method | Path | Handler | Story |
 |---|---|---|---|
-GET| /stock-Outs | liststock-Outs | View stock-out history|
-POST| /stock-Outs | createstock-Outs | Record outgoing stock|
+GET| /stock-Outs | listStockOuts | View stock-out history|
+POST| /stock-Outs | createStockOut | Record outgoing stock|
 
 ## Inventory Report
 
 | Method | Path | Handler | Story |
 |---|---|---|---|
-|GET|/reports/inventory	|showInventoryReport	View inventory report|
-|GET|	/reports/inventory|export|
+|GET|/reports|inventory	|showInventoryReport|View inventory report|
+|GET|	/reports|inventory|export|
 
 ## Dashboard
 | Method | Path | Handler | Story |
 |---|---|---|---|
-|GET	/dashboard	|showDashboard	|View dashboard|
+|GET	|/dashboard	|showDashboard	|View dashboard|
 
 ## Search
 | Method | Path | Handler | Story |
 |---|---|---|---|
-|GET	|/productssearch|	searchProducts|	Search products
+|GET	|/productssearch|	search Products|	Search products|
 
 ## Authentication
 | Method | Path | Handler | Story |
 |---|---|---|---|
-|POST|	/auth|login	|login	Login
-|POST|	/auth|logout|	logout	Logout
+|POST|	/auth|login	|login|	
+|POST|	/auth|logout|	logout|
