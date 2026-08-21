@@ -25,8 +25,8 @@
 
 | Method | Path | Handler | Story |
 |---|---|---|---|
-GET| /stock-ins | /listStockIns |View stock-in history|
-POST| /stock-ins | /createstock-ins | Record incoming stock|
+GET| /stock-ins | listStockIns |View stock-in history|
+POST| /stock-ins | createstock-ins | Record incoming stock|
 
 ## Stock Out Routes
 | Method | Path | Handler | Story |
