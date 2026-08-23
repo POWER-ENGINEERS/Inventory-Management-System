@@ -1,58 +1,120 @@
-# Inventory Management System - Routing Table
-
-## Product Routes
-
-| Method | Path | Handler | Story |
-|---|---|---|---|
-| GET | /products | listProducts | View all products |
-| GET | /products/:id | showProduct | View product details |
-| POST | /products | createProduct | Create a product |
-| PUT | /products/:id | updateProduct | Update product |
-| DELETE | /products/:id | deleteProduct | Delete product |
+\# Inventory Management System - Routing Table
 
 
-## Supplier Routes
 
-| Method | Path | Handler | Story |
-|---|---|---|---|
-|GET | /suppliers   |    listSuppliers | Read Supplier|
-|POST | /suppliers  |     createSupplier | Create Supplier |
-|PUT | /suppliers/:id |  updateSupplier  | Update suppliers |
-|DELETE | /suppliers/:id |  deleteSupplier  | Delete suppliers |
+\## Product Routes
 
 
-## Stock In Routes
 
-| Method | Path | Handler | Story |
-|---|---|---|---|
-|GET| /stock-ins | listStockIns |View stock-in history|
-|POST| /stock-ins | createStockIn | Record incoming stock|
+| Method | Path | Handler | Example Request | Example Response |
 
-## Stock Out Routes
-| Method | Path | Handler | Story |
-|---|---|---|---|
-|GET| /stock-Outs | listStockOuts | View stock-out history|
-|POST| /stock-Outs | createStockOut | Record outgoing stock|
+|---|---|---|---|---|
 
-## Inventory Report
+| GET | /api/products | listProducts | GET /api/products | {"message":"listProducts stub"} |
 
-| Method | Path | Handler | Story |
-|---|---|---|---|
-|GET|/reports/inventory	|showInventoryReport|View inventory report|
-|GET|	/reports/inventory/export|exportInventoryReport|Export report|
+| GET | /api/products/{id} | showProduct | GET /api/products/25 | {"message":"showProduct stub","id":"25"} |
 
-## Dashboard
-| Method | Path | Handler | Story |
-|---|---|---|---|
-|GET	|/dashboard	|showDashboard	|View dashboard|
+| POST | /api/products | createProduct | POST /api/products | {"message":"createProduct stub"} |
 
-## Search
-| Method | Path | Handler | Story |
-|---|---|---|---|
-|GET	|products?search=:query|	searchProducts|	Search products|
+| PUT | /api/products/{id} | updateProduct | PUT /api/products/25 | {"message":"updateProduct stub","id":"25"} |
 
-## Authentication
-| Method | Path | Handler | Story |
-|---|---|---|---|
-|POST|	/auth/login|login	|login|	
-|POST|	/auth/logout|logout|	logout|
+| DELETE | /api/products/{id} | deleteProduct | DELETE /api/products/25 | {"message":"deleteProduct stub","id":"25"} |
+
+
+
+\## Supplier Routes
+
+
+
+| Method | Path | Handler | Example Request | Example Response |
+
+|---|---|---|---|---|
+
+| GET | /api/suppliers | listSuppliers | GET /api/suppliers | {"message":"listSuppliers stub"} |
+
+| POST | /api/suppliers | createSupplier | POST /api/suppliers | {"message":"createSupplier stub"} |
+
+| PUT | /api/suppliers/{id} | updateSupplier | PUT /api/suppliers/10 | {"message":"updateSupplier stub","id":"10"} |
+
+| DELETE | /api/suppliers/{id} | deleteSupplier | DELETE /api/suppliers/10 | {"message":"deleteSupplier stub","id":"10"} |
+
+
+
+\## Stock In Routes
+
+
+
+| Method | Path | Handler | Example Request | Example Response |
+
+|---|---|---|---|---|
+
+| GET | /api/stock-ins | listStockIns | GET /api/stock-ins | {"message":"listStockIns stub"} |
+
+| POST | /api/stock-ins | createStockIn | POST /api/stock-ins | {"message":"createStockIn stub"} |
+
+
+
+\## Stock Out Routes
+
+
+
+| Method | Path | Handler | Example Request | Example Response |
+
+|---|---|---|---|---|
+
+| GET | /api/stock-outs | listStockOuts | GET /api/stock-outs | {"message":"listStockOuts stub"} |
+
+| POST | /api/stock-outs | createStockOut | POST /api/stock-outs | {"message":"createStockOut stub"} |
+
+
+
+\## Inventory Report
+
+
+
+| Method | Path | Handler | Example Request | Example Response |
+
+|---|---|---|---|---|
+
+| GET | /api/reports/inventory | showInventoryReport | GET /api/reports/inventory | {"message":"showInventoryReport stub"} |
+
+| GET | /api/reports/inventory/export | export | GET /api/reports/inventory/export | {"message":"export stub"} |
+
+
+
+\## Dashboard
+
+
+
+| Method | Path | Handler | Example Request | Example Response |
+
+|---|---|---|---|---|
+
+| GET | /api/dashboard | showDashboard | GET /api/dashboard | {"message":"showDashboard stub"} |
+
+
+
+\## Search
+
+
+
+| Method | Path | Handler | Example Request | Example Response |
+
+|---|---|---|---|---|
+
+| GET | /api/productssearch | searchProducts | GET /api/productssearch | {"message":"searchProducts stub"} |
+
+
+
+\## Authentication
+
+
+
+| Method | Path | Handler | Example Request | Example Response |
+
+|---|---|---|---|---|
+
+| POST | /api/auth/login | login | POST /api/auth/login | {"message":"login stub"} |
+
+| POST | /api/auth/logout | logout | POST /api/auth/logout | {"message":"logout stub"} |
+
