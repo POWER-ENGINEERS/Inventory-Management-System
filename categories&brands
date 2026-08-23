@@ -1,0 +1,14 @@
+Manage Branch Information
+Description:
+The Manage Branch Information module allows administrators to create, view, update, and delete branch records within the Inventory Management System. It stores essential information about each business branch, such as the branch name, address, contact details, manager, and operating status. This module helps businesses organize operations across multiple locations and maintain accurate branch information.
+Features
+Add a new branch
+View branch details
+Edit branch information
+Delete inactive branches
+Search and filter branches
+Manage branch contact information
+Assign a branch manager
+Enable or disable branch status
+User Story
+As an administrator, I want to manage branch information so that I can keep accurate records of all business branches and efficiently organize inventory operations across different locations.
