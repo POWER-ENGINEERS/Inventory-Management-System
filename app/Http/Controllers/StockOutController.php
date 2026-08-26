@@ -2,21 +2,50 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\InventoryTransaction;
+use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class StockOutController extends Controller
 {
     public function listStockOuts()
     {
-        return response()->json([
-            'message' => 'listStockOuts stub'
-        ], 200);
+        $stockOuts = InventoryTransaction::where('transaction_type', 'stock_out')
+            ->with('product')
+            ->orderByDesc('transaction_date')
+            ->get();
+
+        return response()->json($stockOuts);
     }
 
-    public function createStockOut()
+    public function createStockOut(Request $request)
     {
+        $validated = $request->validate([
+            'product_id' => 'required|exists:products,product_id',
+            'quantity' => 'required|integer|min:1',
+        ]);
+
+        $stockOut = DB::transaction(function () use ($validated) {
+            $product = Product::findOrFail($validated['product_id']);
+
+            if ($product->quantity < $validated['quantity']) {
+                abort(422, 'Insufficient stock');
+            }
+
+            $product->decrement('quantity', $validated['quantity']);
+
+            return InventoryTransaction::create([
+                'product_id' => $product->product_id,
+                'transaction_type' => 'stock_out',
+                'quantity' => $validated['quantity'],
+                'transaction_date' => now(),
+            ]);
+        });
+
         return response()->json([
-            'message' => 'createStockOut stub'
+            'message' => 'Stock out recorded successfully',
+            'transaction' => $stockOut,
         ], 201);
     }
 }
