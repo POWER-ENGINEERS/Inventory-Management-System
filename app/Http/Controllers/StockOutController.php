@@ -26,13 +26,20 @@ class StockOutController extends Controller
             'quantity' => 'required|integer|min:1',
         ]);
 
-        $stockOut = DB::transaction(function () use ($validated) {
-            $product = Product::findOrFail($validated['product_id']);
+        $product = Product::findOrFail($validated['product_id']);
 
-            if ($product->quantity < $validated['quantity']) {
-                abort(422, 'Insufficient stock');
-            }
+        if ($product->quantity < $validated['quantity']) {
+            return response()->json([
+                'message' => 'Insufficient stock',
+                'errors' => [
+                    'quantity' => [
+                        'The requested quantity exceeds available stock.'
+                    ]
+                ]
+            ], 422);
+        }
 
+        $stockOut = DB::transaction(function () use ($validated, $product) {
             $product->decrement('quantity', $validated['quantity']);
 
             return InventoryTransaction::create([
