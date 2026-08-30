@@ -35,5 +35,7 @@ Route::get('/reports/inventory/export', [InventoryReportController::class, 'expo
 
 Route::get('/dashboard', [DashboardController::class, 'showDashboard']);
 Route::get('/productssearch', [SearchController::class, 'searchProducts']);
+
 Route::post('/auth/login', [AuthController::class, 'login']);
-Route::post('/auth/logout', [AuthController::class, 'logout']);
+Route::post('/auth/logout', [AuthController::class, 'logout'])
+    ->middleware('auth:sanctum');
