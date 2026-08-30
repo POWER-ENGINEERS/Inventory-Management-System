@@ -14,7 +14,10 @@ class ProductController extends Controller
 
     public function showProduct($id)
     {
-        $product = Product::find($id);
+        $product = Product::with([
+            'supplier',
+            'inventoryTransactions'
+        ])->find($id);
 
         if (!$product) {
             return response()->json([
