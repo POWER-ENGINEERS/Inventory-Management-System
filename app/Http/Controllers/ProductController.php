@@ -31,7 +31,7 @@ class ProductController extends Controller
     public function createProduct(Request $request)
     {
         $validated = $request->validate([
-            'product_name' => 'required|string|max:255',
+            'product_name' => 'sometimes|required|string|max:255',
             'category_id' => 'required|exists:categories,category_id',
             'supplier_id' => 'required|exists:suppliers,supplier_id',
             'quantity' => 'required|integer|min:0',
