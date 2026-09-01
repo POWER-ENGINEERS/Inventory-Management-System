@@ -39,11 +39,14 @@ test('stock in can be created successfully', function () {
 
     $response->assertStatus(201)
         ->assertJson([
-            'message' => 'Stock in recorded successfully',
-            'transaction' => [
-                'product_id' => $product->product_id,
-                'transaction_type' => 'stock_in',
-                'quantity' => 5,
+            'status' => 'success',
+            'data' => [
+                'message' => 'Stock in recorded successfully',
+                'transaction' => [
+                    'product_id' => $product->product_id,
+                    'transaction_type' => 'stock_in',
+                    'quantity' => 5,
+                ],
             ],
         ]);
 

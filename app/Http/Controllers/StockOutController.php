@@ -30,12 +30,9 @@ class StockOutController extends Controller
 
         if ($product->quantity < $validated['quantity']) {
             return response()->json([
-                'message' => 'Insufficient stock',
-                'errors' => [
-                    'quantity' => [
-                        'The requested quantity exceeds available stock.'
-                    ]
-                ]
+                'status' => 'error',
+                'error' => 'Insufficient stock',
+                'field' => 'quantity',
             ], 422);
         }
 
@@ -51,8 +48,11 @@ class StockOutController extends Controller
         });
 
         return response()->json([
-            'message' => 'Stock out recorded successfully',
-            'transaction' => $stockOut,
+            'status' => 'success',
+            'data' => [
+                'message' => 'Stock out recorded successfully',
+                'transaction' => $stockOut,
+            ],
         ], 201);
     }
 }

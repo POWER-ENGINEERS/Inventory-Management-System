@@ -9,7 +9,10 @@ class SupplierController extends Controller
 {
     public function listSuppliers()
     {
-        return response()->json(Supplier::all());
+        return response()->json([
+            'status' => 'success',
+            'data' => Supplier::all(),
+        ]);
     }
 
     public function createSupplier(Request $request)
@@ -22,8 +25,8 @@ class SupplierController extends Controller
         $supplier = Supplier::create($validated);
 
         return response()->json([
-            'message' => 'Supplier created successfully',
-            'supplier' => $supplier
+            'status' => 'success',
+            'data' => $supplier,
         ], 201);
     }
 
@@ -33,7 +36,8 @@ class SupplierController extends Controller
 
         if (!$supplier) {
             return response()->json([
-                'message' => 'Supplier not found'
+                'status' => 'error',
+                'error' => 'Supplier not found',
             ], 404);
         }
 
@@ -45,8 +49,8 @@ class SupplierController extends Controller
         $supplier->update($validated);
 
         return response()->json([
-            'message' => 'Supplier updated successfully',
-            'supplier' => $supplier
+            'status' => 'success',
+            'data' => $supplier,
         ]);
     }
 
@@ -56,14 +60,18 @@ class SupplierController extends Controller
 
         if (!$supplier) {
             return response()->json([
-                'message' => 'Supplier not found'
+                'status' => 'error',
+                'error' => 'Supplier not found',
             ], 404);
         }
 
         $supplier->delete();
 
         return response()->json([
-            'message' => 'Supplier deleted successfully'
+            'status' => 'success',
+            'data' => [
+                'message' => 'Supplier deleted successfully',
+            ],
         ]);
     }
 }

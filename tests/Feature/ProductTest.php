@@ -10,7 +10,10 @@ uses(RefreshDatabase::class);
 test('products endpoint returns successful response', function () {
     $response = $this->getJson('/api/products');
 
-    $response->assertStatus(200);
+    $response->assertStatus(200)
+        ->assertJson([
+            'status' => 'success',
+        ]);
 });
 
 test('product details returns the requested product', function () {
@@ -35,8 +38,11 @@ test('product details returns the requested product', function () {
 
     $response->assertStatus(200)
         ->assertJson([
-            'product_id' => $product->product_id,
-            'product_name' => 'Test Laptop',
+            'status' => 'success',
+            'data' => [
+                'product_id' => $product->product_id,
+                'product_name' => 'Test Laptop',
+            ],
         ]);
 });
 
@@ -60,8 +66,8 @@ test('product can be created successfully', function () {
 
     $response->assertStatus(201)
         ->assertJson([
-            'message' => 'Product created successfully',
-            'product' => [
+            'status' => 'success',
+            'data' => [
                 'product_name' => 'Gaming PC',
                 'category_id' => $category->category_id,
                 'supplier_id' => $supplier->supplier_id,
@@ -101,8 +107,8 @@ test('product can be updated successfully', function () {
 
     $response->assertStatus(200)
         ->assertJson([
-            'message' => 'Product updated successfully',
-            'product' => [
+            'status' => 'success',
+            'data' => [
                 'product_name' => 'Updated Laptop',
                 'quantity' => 15,
                 'price' => '30000.00',
@@ -115,6 +121,7 @@ test('product can be updated successfully', function () {
         'quantity' => 15,
     ]);
 });
+
 test('product can be deleted successfully', function () {
     $category = Category::create([
         'category_name' => 'Accessories',
@@ -137,13 +144,17 @@ test('product can be deleted successfully', function () {
 
     $response->assertStatus(200)
         ->assertJson([
-            'message' => 'Product deleted successfully',
+            'status' => 'success',
+            'data' => [
+                'message' => 'Product deleted successfully',
+            ],
         ]);
 
     $this->assertDatabaseMissing('products', [
         'product_id' => $product->product_id,
     ]);
-});	
+});
+
 test('product creation fails when required fields are missing', function () {
     $response = $this->postJson('/api/products', [
         'product_name' => 'Incomplete Product',
@@ -157,11 +168,13 @@ test('product creation fails when required fields are missing', function () {
             'price',
         ]);
 });
+
 test('product details returns 404 when product does not exist', function () {
     $response = $this->getJson('/api/products/9999');
 
     $response->assertStatus(404)
         ->assertJson([
-            'message' => 'Product not found',
+            'status' => 'error',
+            'error' => 'Product not found',
         ]);
 });
