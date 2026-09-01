@@ -39,9 +39,12 @@ class StockInController extends Controller
             ]);
         });
 
-        return response()->json([
-            'message' => 'Stock in recorded successfully',
-            'transaction' => $stockIn,
-        ], 201);
+       return response()->json([
+    'status' => 'success',
+    'data' => [
+        'message' => 'Stock in recorded successfully',
+        'transaction' => $stockIn,
+    ],
+], 201);
     }
 }

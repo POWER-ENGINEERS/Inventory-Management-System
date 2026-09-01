@@ -34,28 +34,31 @@ test('stock out can be created successfully', function () {
 
     $response = $this->postJson('/api/stock-outs', [
         'product_id' => $product->product_id,
-        'quantity' => 3,
+        'quantity' => 5,
     ]);
 
     $response->assertStatus(201)
         ->assertJson([
-            'message' => 'Stock out recorded successfully',
-            'transaction' => [
-                'product_id' => $product->product_id,
-                'transaction_type' => 'stock_out',
-                'quantity' => 3,
+            'status' => 'success',
+            'data' => [
+                'message' => 'Stock out recorded successfully',
+                'transaction' => [
+                    'product_id' => $product->product_id,
+                    'transaction_type' => 'stock_out',
+                    'quantity' => 5,
+                ],
             ],
         ]);
 
     $this->assertDatabaseHas('inventory_transactions', [
         'product_id' => $product->product_id,
         'transaction_type' => 'stock_out',
-        'quantity' => 3,
+        'quantity' => 5,
     ]);
 
     $this->assertDatabaseHas('products', [
         'product_id' => $product->product_id,
-        'quantity' => 7,
+        'quantity' => 5,
     ]);
 });
 
@@ -72,7 +75,7 @@ test('stock out fails when required fields are missing', function () {
 test('stock out fails when product does not exist', function () {
     $response = $this->postJson('/api/stock-outs', [
         'product_id' => 99999,
-        'quantity' => 3,
+        'quantity' => 5,
     ]);
 
     $response->assertStatus(422)
@@ -106,7 +109,9 @@ test('stock out fails when requested quantity exceeds available stock', function
 
     $response->assertStatus(422)
         ->assertJson([
-            'message' => 'Insufficient stock',
+            'status' => 'error',
+            'error' => 'Insufficient stock',
+            'field' => 'quantity',
         ]);
 
     $this->assertDatabaseHas('products', [

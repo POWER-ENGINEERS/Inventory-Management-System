@@ -9,7 +9,10 @@ class ProductController extends Controller
 {
     public function listProducts()
     {
-        return response()->json(Product::all());
+        return response()->json([
+            'status' => 'success',
+            'data' => Product::all(),
+        ], 200);
     }
 
     public function showProduct($id)
@@ -21,11 +24,15 @@ class ProductController extends Controller
 
         if (!$product) {
             return response()->json([
-                'message' => 'Product not found'
+                'status' => 'error',
+                'error' => 'Product not found',
             ], 404);
         }
 
-        return response()->json($product);
+        return response()->json([
+            'status' => 'success',
+            'data' => $product,
+        ], 200);
     }
 
     public function createProduct(Request $request)
@@ -41,8 +48,8 @@ class ProductController extends Controller
         $product = Product::create($validated);
 
         return response()->json([
-            'message' => 'Product created successfully',
-            'product' => $product
+            'status' => 'success',
+            'data' => $product,
         ], 201);
     }
 
@@ -52,7 +59,8 @@ class ProductController extends Controller
 
         if (!$product) {
             return response()->json([
-                'message' => 'Product not found'
+                'status' => 'error',
+                'error' => 'Product not found',
             ], 404);
         }
 
@@ -67,9 +75,9 @@ class ProductController extends Controller
         $product->update($validated);
 
         return response()->json([
-            'message' => 'Product updated successfully',
-            'product' => $product
-        ]);
+            'status' => 'success',
+            'data' => $product,
+        ], 200);
     }
 
     public function deleteProduct($id)
@@ -78,14 +86,18 @@ class ProductController extends Controller
 
         if (!$product) {
             return response()->json([
-                'message' => 'Product not found'
+                'status' => 'error',
+                'error' => 'Product not found',
             ], 404);
         }
 
         $product->delete();
 
         return response()->json([
-            'message' => 'Product deleted successfully'
-        ]);
+            'status' => 'success',
+            'data' => [
+                'message' => 'Product deleted successfully',
+            ],
+        ], 200);
     }
 }
