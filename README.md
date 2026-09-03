@@ -128,3 +128,16 @@ Multi-Branch Inventory
 Backup & Restore
 Mobile Responsive Design
 
+## Testing
+
+### How to Run Automated Tests
+
+1. Open the project directory in Command Prompt or terminal.
+2. Make sure the project dependencies are installed.
+3. Run the automated test suite using the Laravel Artisan test command:
+
+```bash
+php artisan test
+
+```
+php artisan test is a Laravel command that runs all automated tests in the project to verify that the application's features work correctly and that changes have not introduced errors.
