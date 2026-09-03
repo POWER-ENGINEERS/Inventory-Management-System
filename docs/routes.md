@@ -1,120 +1,64 @@
-\# Inventory Management System - Routing Table
+# Inventory Management System - Routing Table
 
-
-
-\## Product Routes
-
-
+## Product Routes
 
 | Method | Path | Handler | Example Request | Example Response |
-
 |---|---|---|---|---|
+| GET | /api/products | ProductController@listProducts | GET /api/products | `{"status":"success","data":[...]}` |
+| GET | /api/products/{id} | ProductController@showProduct | GET /api/products/25 | `{"status":"success","data":{...}}` |
+| POST | /api/products | ProductController@createProduct | POST /api/products | `{"status":"success","data":{...}}` |
+| PUT | /api/products/{id} | ProductController@updateProduct | PUT /api/products/25 | `{"status":"success","data":{...}}` |
+| DELETE | /api/products/{id} | ProductController@deleteProduct | DELETE /api/products/25 | `{"status":"success","data":{...}}` |
 
-| GET | /api/products | listProducts | GET /api/products | {"message":"listProducts stub"} |
-
-| GET | /api/products/{id} | showProduct | GET /api/products/25 | {"message":"showProduct stub","id":"25"} |
-
-| POST | /api/products | createProduct | POST /api/products | {"message":"createProduct stub"} |
-
-| PUT | /api/products/{id} | updateProduct | PUT /api/products/25 | {"message":"updateProduct stub","id":"25"} |
-
-| DELETE | /api/products/{id} | deleteProduct | DELETE /api/products/25 | {"message":"deleteProduct stub","id":"25"} |
-
-
-
-\## Supplier Routes
-
-
+## Supplier Routes
 
 | Method | Path | Handler | Example Request | Example Response |
-
 |---|---|---|---|---|
+| GET | /api/suppliers | SupplierController@listSuppliers | GET /api/suppliers | `{"status":"success","data":[...]}` |
+| POST | /api/suppliers | SupplierController@createSupplier | POST /api/suppliers | `{"status":"success","data":{...}}` |
+| PUT | /api/suppliers/{id} | SupplierController@updateSupplier | PUT /api/suppliers/10 | `{"status":"success","data":{...}}` |
+| DELETE | /api/suppliers/{id} | SupplierController@deleteSupplier | DELETE /api/suppliers/10 | `{"status":"success","data":{...}}` |
 
-| GET | /api/suppliers | listSuppliers | GET /api/suppliers | {"message":"listSuppliers stub"} |
-
-| POST | /api/suppliers | createSupplier | POST /api/suppliers | {"message":"createSupplier stub"} |
-
-| PUT | /api/suppliers/{id} | updateSupplier | PUT /api/suppliers/10 | {"message":"updateSupplier stub","id":"10"} |
-
-| DELETE | /api/suppliers/{id} | deleteSupplier | DELETE /api/suppliers/10 | {"message":"deleteSupplier stub","id":"10"} |
-
-
-
-\## Stock In Routes
-
-
+## Stock In Routes
 
 | Method | Path | Handler | Example Request | Example Response |
-
 |---|---|---|---|---|
+| GET | /api/stock-ins | StockInController@listStockIns | GET /api/stock-ins | `{"status":"success","data":[...]}` |
+| POST | /api/stock-ins | StockInController@createStockIn | POST /api/stock-ins | `{"status":"success","data":{...}}` |
 
-| GET | /api/stock-ins | listStockIns | GET /api/stock-ins | {"message":"listStockIns stub"} |
-
-| POST | /api/stock-ins | createStockIn | POST /api/stock-ins | {"message":"createStockIn stub"} |
-
-
-
-\## Stock Out Routes
-
-
+## Stock Out Routes
 
 | Method | Path | Handler | Example Request | Example Response |
-
 |---|---|---|---|---|
+| GET | /api/stock-outs | StockOutController@listStockOuts | GET /api/stock-outs | `{"status":"success","data":[...]}` |
+| POST | /api/stock-outs | StockOutController@createStockOut | POST /api/stock-outs | `{"status":"success","data":{...}}` |
 
-| GET | /api/stock-outs | listStockOuts | GET /api/stock-outs | {"message":"listStockOuts stub"} |
+> Stock-out requests are rejected when the requested quantity exceeds the product's available stock.
 
-| POST | /api/stock-outs | createStockOut | POST /api/stock-outs | {"message":"createStockOut stub"} |
-
-
-
-\## Inventory Report
-
-
+## Inventory Report
 
 | Method | Path | Handler | Example Request | Example Response |
-
 |---|---|---|---|---|
+| GET | /api/reports/inventory | InventoryReportController@showInventoryReport | GET /api/reports/inventory | `{"total_products":...,"total_quantity":...,"total_inventory_value":...,"products":[...]}` |
+| GET | /api/reports/inventory/export | InventoryReportController@export | GET /api/reports/inventory/export | CSV inventory report |
 
-| GET | /api/reports/inventory | showInventoryReport | GET /api/reports/inventory | {"message":"showInventoryReport stub"} |
-
-| GET | /api/reports/inventory/export | export | GET /api/reports/inventory/export | {"message":"export stub"} |
-
-
-
-\## Dashboard
-
-
+## Dashboard
 
 | Method | Path | Handler | Example Request | Example Response |
-
 |---|---|---|---|---|
+| GET | /api/dashboard | DashboardController@showDashboard | GET /api/dashboard | `{"total_products":...,"low_stock_products":[...],"recent_activities":[...]}` |
 
-| GET | /api/dashboard | showDashboard | GET /api/dashboard | {"message":"showDashboard stub"} |
-
-
-
-\## Search
-
-
+## Search
 
 | Method | Path | Handler | Example Request | Example Response |
-
 |---|---|---|---|---|
+| GET | /api/productssearch | SearchController@searchProducts | GET /api/productssearch?search=keyboard | `[...]` |
 
-| GET | /api/productssearch | searchProducts | GET /api/productssearch | {"message":"searchProducts stub"} |
-
-
-
-\## Authentication
-
-
+## Authentication
 
 | Method | Path | Handler | Example Request | Example Response |
-
 |---|---|---|---|---|
+| POST | /api/auth/login | AuthController@login | POST /api/auth/login | `{"message":"Login successful","user":{...},"token":"..."}` |
+| POST | /api/auth/logout | AuthController@logout | POST /api/auth/logout | `{"message":"Logout successful"}` |
 
-| POST | /api/auth/login | login | POST /api/auth/login | {"message":"login stub"} |
-
-| POST | /api/auth/logout | logout | POST /api/auth/logout | {"message":"logout stub"} |
-
+> The logout route requires authentication using the `auth:sanctum` middleware.
