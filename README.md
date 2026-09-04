@@ -3,6 +3,17 @@ A web-based Inventory Management System developed to help businesses manage prod
 ## Project Description
 The Inventory Management System is a web-based application designed to help businesses efficiently manage their inventory operations. It provides tools for managing products, categories, brands, suppliers, customers, employees, purchase orders, stock movements, and sales transactions. The system also generates inventory and sales reports, tracks audit logs, and monitors stock levels to improve accuracy, reduce manual work, and support better business decision-making.
 
+## Problem Statement
+
+Businesses that manage inventory manually may experience difficulties in monitoring products, suppliers, incoming stock, and outgoing stock. Manual recording can make it difficult to maintain accurate inventory information and monitor stock movements efficiently. The Inventory Management System aims to provide a centralized web-based system for managing product records, supplier information, stock-in transactions, and stock-out transactions, helping improve inventory accuracy and reduce manual record-keeping.
+
+### Primary Record Types
+
+1. **Products** — Records the products managed by the inventory system.
+2. **Suppliers** — Records supplier information associated with inventory products.
+3. **Stock In** — Records products received and added to inventory.
+4. **Stock Out** — Records products released, sold, or used from inventory.
+
 ## 👥 Team Members
 
 | Name | Role | Responsibilities |
