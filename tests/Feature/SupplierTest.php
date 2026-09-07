@@ -119,3 +119,23 @@ test('deleting nonexistent supplier returns 404', function () {
             'error' => 'Supplier not found',
         ]);
 });
+test('supplier details can be retrieved successfully', function () {
+    $supplier = Supplier::create([
+        'supplier_name' => 'Detail Supplier',
+        'contact_number' => '09123456789',
+    ]);
+
+    $response = $this->getJson(
+        '/api/suppliers/' . $supplier->supplier_id
+    );
+
+    $response->assertStatus(200)
+        ->assertJson([
+            'status' => 'success',
+            'data' => [
+                'supplier_id' => $supplier->supplier_id,
+                'supplier_name' => 'Detail Supplier',
+                'contact_number' => '09123456789',
+            ],
+        ]);
+});
