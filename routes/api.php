@@ -16,6 +16,7 @@ Route::delete('/products/{id}', [ProductController::class, 'deleteProduct']);
 use App\Http\Controllers\SupplierController;
 
 Route::get('/suppliers', [SupplierController::class, 'listSuppliers']);
+Route::get('/suppliers/{id}', [SupplierController::class, 'showSupplier']);
 Route::post('/suppliers', [SupplierController::class, 'createSupplier']);
 Route::put('/suppliers/{id}', [SupplierController::class, 'updateSupplier']);
 Route::delete('/suppliers/{id}', [SupplierController::class, 'deleteSupplier']);
