@@ -30,7 +30,10 @@ Route::delete('/stock-ins/{id}', [StockInController::class, 'deleteStockIn']);
 use App\Http\Controllers\StockOutController;
 
 Route::get('/stock-outs', [StockOutController::class, 'listStockOuts']);
+Route::get('/stock-outs/{id}', [StockOutController::class, 'showStockOut']);
 Route::post('/stock-outs', [StockOutController::class, 'createStockOut']);
+Route::put('/stock-outs/{id}', [StockOutController::class, 'updateStockOut']);
+Route::delete('/stock-outs/{id}', [StockOutController::class, 'deleteStockOut']);
 
 Route::get('/reports/inventory', [InventoryReportController::class, 'showInventoryReport']);
 Route::get('/reports/inventory/export', [InventoryReportController::class, 'export']);
