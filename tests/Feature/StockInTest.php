@@ -14,6 +14,43 @@ test('stock-ins endpoint returns successful response', function () {
     $response->assertStatus(200);
 });
 
+test('stock-in details can be retrieved successfully', function () {
+    $category = Category::create([
+        'category_name' => 'Electronics',
+    ]);
+
+    $supplier = Supplier::create([
+        'supplier_name' => 'Test Supplier',
+        'contact_number' => '09123456789',
+    ]);
+
+    $product = Product::create([
+        'product_name' => 'Test Laptop',
+        'category_id' => $category->category_id,
+        'supplier_id' => $supplier->supplier_id,
+        'quantity' => 10,
+        'price' => 25000,
+    ]);
+
+    $stockIn = InventoryTransaction::create([
+        'product_id' => $product->product_id,
+        'transaction_type' => 'stock_in',
+        'quantity' => 5,
+        'transaction_date' => now(),
+    ]);
+
+    $response = $this->getJson('/api/stock-ins/' . $stockIn->id);
+
+    $response->assertStatus(200)
+        ->assertJson([
+            'status' => 'success',
+            'data' => [
+                'product_id' => $product->product_id,
+                'transaction_type' => 'stock_in',
+                'quantity' => 5,
+            ],
+        ]);
+});
 test('stock in can be created successfully', function () {
     $category = Category::create([
         'category_name' => 'Electronics',
