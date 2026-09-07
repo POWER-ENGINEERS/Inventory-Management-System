@@ -14,6 +14,46 @@ test('stock-outs endpoint returns successful response', function () {
     $response->assertStatus(200);
 });
 
+test('stock-out details can be retrieved successfully', function () {
+    $category = Category::create([
+        'category_name' => 'Electronics',
+    ]);
+
+    $supplier = Supplier::create([
+        'supplier_name' => 'Test Supplier',
+        'contact_number' => '09123456789',
+    ]);
+
+    $product = Product::create([
+        'product_name' => 'Test Laptop',
+        'category_id' => $category->category_id,
+        'supplier_id' => $supplier->supplier_id,
+        'quantity' => 10,
+        'price' => 25000,
+    ]);
+
+    $stockOut = InventoryTransaction::create([
+        'product_id' => $product->product_id,
+        'transaction_type' => 'stock_out',
+        'quantity' => 5,
+        'transaction_date' => now(),
+    ]);
+
+    $response = $this->getJson(
+        '/api/stock-outs/' . $stockOut->transaction_id
+    );
+
+    $response->assertStatus(200)
+        ->assertJson([
+            'status' => 'success',
+            'data' => [
+                'product_id' => $product->product_id,
+                'transaction_type' => 'stock_out',
+                'quantity' => 5,
+            ],
+        ]);
+});
+
 test('stock out can be created successfully', function () {
     $category = Category::create([
         'category_name' => 'Electronics',
@@ -59,6 +99,108 @@ test('stock out can be created successfully', function () {
     $this->assertDatabaseHas('products', [
         'product_id' => $product->product_id,
         'quantity' => 5,
+    ]);
+});
+
+test('stock out can be updated successfully', function () {
+    $category = Category::create([
+        'category_name' => 'Electronics',
+    ]);
+
+    $supplier = Supplier::create([
+        'supplier_name' => 'Test Supplier',
+        'contact_number' => '09123456789',
+    ]);
+
+    $product = Product::create([
+        'product_name' => 'Test Laptop',
+        'category_id' => $category->category_id,
+        'supplier_id' => $supplier->supplier_id,
+        'quantity' => 5,
+        'price' => 25000,
+    ]);
+
+    $stockOut = InventoryTransaction::create([
+        'product_id' => $product->product_id,
+        'transaction_type' => 'stock_out',
+        'quantity' => 5,
+        'transaction_date' => now(),
+    ]);
+
+    $response = $this->putJson(
+        '/api/stock-outs/' . $stockOut->transaction_id,
+        [
+            'product_id' => $product->product_id,
+            'quantity' => 3,
+        ]
+    );
+
+    $response->assertStatus(200)
+        ->assertJson([
+            'status' => 'success',
+            'data' => [
+                'transaction_id' => $stockOut->transaction_id,
+                'product_id' => $product->product_id,
+                'transaction_type' => 'stock_out',
+                'quantity' => 3,
+            ],
+        ]);
+
+    $this->assertDatabaseHas('inventory_transactions', [
+        'transaction_id' => $stockOut->transaction_id,
+        'product_id' => $product->product_id,
+        'transaction_type' => 'stock_out',
+        'quantity' => 3,
+    ]);
+
+    $this->assertDatabaseHas('products', [
+        'product_id' => $product->product_id,
+        'quantity' => 7,
+    ]);
+});
+
+test('stock out can be deleted successfully', function () {
+    $category = Category::create([
+        'category_name' => 'Electronics',
+    ]);
+
+    $supplier = Supplier::create([
+        'supplier_name' => 'Test Supplier',
+        'contact_number' => '09123456789',
+    ]);
+
+    $product = Product::create([
+        'product_name' => 'Test Laptop',
+        'category_id' => $category->category_id,
+        'supplier_id' => $supplier->supplier_id,
+        'quantity' => 5,
+        'price' => 25000,
+    ]);
+
+    $stockOut = InventoryTransaction::create([
+        'product_id' => $product->product_id,
+        'transaction_type' => 'stock_out',
+        'quantity' => 5,
+        'transaction_date' => now(),
+    ]);
+
+    $response = $this->deleteJson(
+        '/api/stock-outs/' . $stockOut->transaction_id
+    );
+
+    $response->assertStatus(200)
+        ->assertJson([
+            'status' => 'success',
+            'message' => 'Stock-out deleted successfully',
+        ]);
+
+    $this->assertDatabaseMissing('inventory_transactions', [
+        'transaction_id' => $stockOut->transaction_id,
+    ]);
+
+    $this->assertDatabaseHas('products', [
+        'product_id' => $product->product_id,
+        'quantity' => 10,
     ]);
 });
 
