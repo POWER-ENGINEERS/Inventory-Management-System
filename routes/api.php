@@ -23,8 +23,10 @@ Route::delete('/suppliers/{id}', [SupplierController::class, 'deleteSupplier']);
 use App\Http\Controllers\StockInController;
 
 Route::get('/stock-ins', [StockInController::class, 'listStockIns']);
+Route::get('/stock-ins/{id}', [StockInController::class, 'showStockIn']);
 Route::post('/stock-ins', [StockInController::class, 'createStockIn']);
-
+Route::put('/stock-ins/{id}', [StockInController::class, 'updateStockIn']);
+Route::delete('/stock-ins/{id}', [StockInController::class, 'deleteStockIn']);
 use App\Http\Controllers\StockOutController;
 
 Route::get('/stock-outs', [StockOutController::class, 'listStockOuts']);
