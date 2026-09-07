@@ -15,6 +15,23 @@ class SupplierController extends Controller
         ]);
     }
 
+    public function showSupplier($id)
+    {
+        $supplier = Supplier::find($id);
+
+        if (!$supplier) {
+            return response()->json([
+                'status' => 'error',
+                'error' => 'Supplier not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $supplier,
+        ]);
+    }
+
     public function createSupplier(Request $request)
     {
         $validated = $request->validate([
