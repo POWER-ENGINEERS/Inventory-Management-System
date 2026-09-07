@@ -112,3 +112,59 @@ test('stock in fails when quantity is zero', function () {
             'quantity',
         ]);
 });
+test('stock in can be updated successfully', function () {
+    $category = Category::create([
+        'category_name' => 'Electronics',
+    ]);
+
+    $supplier = Supplier::create([
+        'supplier_name' => 'Test Supplier',
+        'contact_number' => '09123456789',
+    ]);
+
+    $product = Product::create([
+        'product_name' => 'Test Laptop',
+        'category_id' => $category->category_id,
+        'supplier_id' => $supplier->supplier_id,
+        'quantity' => 15,
+        'price' => 25000,
+    ]);
+
+    $stockIn = InventoryTransaction::create([
+        'product_id' => $product->product_id,
+        'transaction_type' => 'stock_in',
+        'quantity' => 5,
+        'transaction_date' => now(),
+    ]);
+
+    $response = $this->putJson(
+        '/api/stock-ins/' . $stockIn->transaction_id,
+        [
+            'product_id' => $product->product_id,
+            'quantity' => 10,
+        ]
+    );
+
+    $response->assertStatus(200)
+        ->assertJson([
+            'status' => 'success',
+            'data' => [
+                'transaction_id' => $stockIn->transaction_id,
+                'product_id' => $product->product_id,
+                'transaction_type' => 'stock_in',
+                'quantity' => 10,
+            ],
+        ]);
+
+    $this->assertDatabaseHas('inventory_transactions', [
+        'transaction_id' => $stockIn->transaction_id,
+        'product_id' => $product->product_id,
+        'transaction_type' => 'stock_in',
+        'quantity' => 10,
+    ]);
+
+    $this->assertDatabaseHas('products', [
+        'product_id' => $product->product_id,
+        'quantity' => 20,
+    ]);
+});
