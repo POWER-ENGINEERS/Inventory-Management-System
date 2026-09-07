@@ -18,6 +18,27 @@ test('suppliers endpoint returns successful response', function () {
         ]);
 });
 
+test('supplier details can be retrieved successfully', function () {
+    $supplier = Supplier::create([
+        'supplier_name' => 'Detail Supplier',
+        'contact_number' => '09123456789',
+    ]);
+
+    $response = $this->getJson(
+        '/api/suppliers/' . $supplier->supplier_id
+    );
+
+    $response->assertStatus(200)
+        ->assertJson([
+            'status' => 'success',
+            'data' => [
+                'supplier_id' => $supplier->supplier_id,
+                'supplier_name' => 'Detail Supplier',
+                'contact_number' => '09123456789',
+            ],
+        ]);
+});
+
 test('supplier can be created successfully', function () {
     $response = $this->postJson('/api/suppliers', [
         'supplier_name' => 'New Supplier',
@@ -45,10 +66,13 @@ test('supplier can be updated successfully', function () {
         'contact_number' => '09111111111',
     ]);
 
-    $response = $this->putJson('/api/suppliers/' . $supplier->supplier_id, [
-        'supplier_name' => 'Updated Supplier',
-        'contact_number' => '09222222222',
-    ]);
+    $response = $this->putJson(
+        '/api/suppliers/' . $supplier->supplier_id,
+        [
+            'supplier_name' => 'Updated Supplier',
+            'contact_number' => '09222222222',
+        ]
+    );
 
     $response->assertStatus(200)
         ->assertJson([
@@ -72,7 +96,9 @@ test('supplier can be deleted successfully', function () {
         'contact_number' => '09888888888',
     ]);
 
-    $response = $this->deleteJson('/api/suppliers/' . $supplier->supplier_id);
+    $response = $this->deleteJson(
+        '/api/suppliers/' . $supplier->supplier_id
+    );
 
     $response->assertStatus(200)
         ->assertJson([
