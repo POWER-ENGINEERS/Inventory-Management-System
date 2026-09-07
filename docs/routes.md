@@ -30,9 +30,13 @@
 
 | Method | Path | Handler | Example Request | Example Response |
 |---|---|---|---|---|
-| GET | /api/stock-outs | StockOutController@listStockOuts | GET /api/stock-outs | `{"status":"success","data":[...]}` |
-| POST | /api/stock-outs | StockOutController@createStockOut | POST /api/stock-outs | `{"status":"success","data":{...}}` |
+| GET | `/api/stock-outs` | `StockOutController@listStockOuts` | `GET /api/stock-outs` | `{"status":"success","data":[...]}` |
+| GET | `/api/stock-outs/{id}` | `StockOutController@showStockOut` | `GET /api/stock-outs/1` | `{"status":"success","data":{...}}` |
+| POST | `/api/stock-outs` | `StockOutController@createStockOut` | `POST /api/stock-outs` | `{"status":"success","data":{...}}` |
+| PUT | `/api/stock-outs/{id}` | `StockOutController@updateStockOut` | `PUT /api/stock-outs/1` | `{"status":"success","data":{...}}` |
+| DELETE | `/api/stock-outs/{id}` | `StockOutController@deleteStockOut` | `DELETE /api/stock-outs/1` | `{"status":"success","message":"Stock-out deleted successfully"}` |
 
+> Stock-out requests are rejected when the requested quantity exceeds the product's available stock.
 > Stock-out requests are rejected when the requested quantity exceeds the product's available stock.
 
 ## Inventory Report
