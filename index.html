@@ -989,6 +989,54 @@
         </div>
     </div>
 
+
+    <!-- WEEK 6: REUSABLE UI STATES -->
+
+<!-- Empty State -->
+<template id="empty-state-template">
+    <div class="ui-state ui-state-empty">
+        <div class="ui-state-icon">
+            <i class="fa-solid fa-folder-open"></i>
+        </div>
+        <h3 class="ui-state-title">No records found</h3>
+        <p class="ui-state-message">
+            There are no records to display.
+        </p>
+    </div>
+</template>
+
+<!-- Loading State -->
+<template id="loading-state-template">
+    <div class="ui-state ui-state-loading">
+        <div class="ui-state-icon">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+        </div>
+        <h3 class="ui-state-title">Loading...</h3>
+        <p class="ui-state-message">
+            Please wait while the data is being loaded.
+        </p>
+    </div>
+</template>
+
+<!-- Error State -->
+<template id="error-state-template">
+    <div class="ui-state ui-state-error">
+        <div class="ui-state-icon">
+            <i class="fa-solid fa-circle-exclamation"></i>
+        </div>
+        <h3 class="ui-state-title">Something went wrong</h3>
+        <p class="ui-state-message">
+            We could not load the requested information.
+        </p>
+        <button type="button" class="btn btn-primary ui-state-retry">
+            <i class="fa-solid fa-rotate-right"></i>
+            Try Again
+        </button>
+    </div>
+</template>
+
+<!-- END WEEK 6: REUSABLE UI STATES -->
+
     <!-- MODAL DIALOGS FOR FORMS -->
 
     <!-- Product Modal (Add / Edit) -->
