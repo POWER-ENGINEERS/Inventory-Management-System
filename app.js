@@ -3337,3 +3337,85 @@
     };
 
 })();
+/* =========================================
+   WEEK 6: REUSABLE UI STATE HELPERS
+   ========================================= */
+
+function createUIState(templateId, title, message) {
+    const template = document.getElementById(templateId);
+
+    if (!template) {
+        console.error(`UI state template not found: ${templateId}`);
+        return null;
+    }
+
+    const state = template.content.cloneNode(true);
+
+    const titleElement = state.querySelector(".ui-state-title");
+    const messageElement = state.querySelector(".ui-state-message");
+
+    if (titleElement && title) {
+        titleElement.textContent = title;
+    }
+
+    if (messageElement && message) {
+        messageElement.textContent = message;
+    }
+
+    return state;
+}
+
+function showEmptyState(container, title = "No records found", message = "There are no records to display.") {
+    if (!container) return;
+
+    container.innerHTML = "";
+    const state = createUIState(
+        "empty-state-template",
+        title,
+        message
+    );
+
+    if (state) {
+        container.appendChild(state);
+    }
+}
+
+function showLoadingState(container, title = "Loading...", message = "Please wait while the data is being loaded.") {
+    if (!container) return;
+
+    container.innerHTML = "";
+    const state = createUIState(
+        "loading-state-template",
+        title,
+        message
+    );
+
+    if (state) {
+        container.appendChild(state);
+    }
+}
+
+function showErrorState(container, title = "Something went wrong", message = "We could not load the requested information.", retryCallback = null) {
+    if (!container) return;
+
+    container.innerHTML = "";
+    const state = createUIState(
+        "error-state-template",
+        title,
+        message
+    );
+
+    if (state) {
+        const retryButton = state.querySelector(".ui-state-retry");
+
+        if (retryButton && typeof retryCallback === "function") {
+            retryButton.addEventListener("click", retryCallback);
+        }
+
+        container.appendChild(state);
+    }
+}
+
+/* =========================================
+   END WEEK 6: REUSABLE UI STATE HELPERS
+   ========================================= */
