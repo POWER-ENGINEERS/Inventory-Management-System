@@ -2038,3 +2038,54 @@ tr:hover td {
 .logo-icon {
     display: none;
 }
+
+/* =========================================
+   WEEK 6: REUSABLE UI STATES
+   ========================================= */
+
+.ui-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 24px;
+    margin: 20px 0;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: #ffffff;
+}
+
+.ui-state-icon {
+    font-size: 36px;
+    margin-bottom: 12px;
+}
+
+.ui-state-title {
+    margin: 0 0 8px;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.ui-state-message {
+    margin: 0;
+    max-width: 480px;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.ui-state-empty .ui-state-icon {
+    opacity: 0.65;
+}
+
+.ui-state-loading .ui-state-icon {
+    opacity: 0.8;
+}
+
+.ui-state-error .ui-state-icon {
+    opacity: 0.85;
+}
+
+.ui-state-retry {
+    margin-top: 16px;
+}
