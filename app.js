@@ -1502,10 +1502,14 @@
             });
         }
 
-        if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted">No purchase orders found matching filters.</td></tr>`;
-            return;
-        }
+       if (filtered.length === 0) {
+    showEmptyState(
+        tbody,
+        "No purchase orders found",
+        "There are no purchase orders matching your current filters."
+    );
+    return;
+}
 
         filtered.forEach(po => {
             const s = db.suppliers.find(sup => sup.id === po.supplierId);
