@@ -932,10 +932,14 @@
             });
         }
 
-        if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted">No products found matching filters.</td></tr>`;
-            return;
-        }
+       if (filtered.length === 0) {
+    showEmptyState(
+        tbody,
+        "No products found",
+        "There are no products matching your current filters."
+    );
+    return;
+}
 
         filtered.forEach(p => {
             const catObj = db.categories.find(c => c.id === p.category);
