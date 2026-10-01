@@ -1280,24 +1280,28 @@
     });
 
     function renderSuppliersTable() {
-        const tbody = document.getElementById("suppliers-table-body");
-        tbody.innerHTML = "";
+    const tbody = document.getElementById("suppliers-table-body");
+    tbody.innerHTML = "";
 
-        const query = document.getElementById("suppliers-search").value.trim().toLowerCase();
-        let filtered = db.suppliers;
+    const query = document.getElementById("suppliers-search").value.trim().toLowerCase();
+    let filtered = db.suppliers;
 
-        if (query) {
-            filtered = filtered.filter(s => 
-                s.company.toLowerCase().includes(query) ||
-                s.contact.toLowerCase().includes(query) ||
-                s.email.toLowerCase().includes(query)
-            );
-        }
+    if (query) {
+        filtered = filtered.filter(s =>
+            s.company.toLowerCase().includes(query) ||
+            s.contact.toLowerCase().includes(query) ||
+            s.email.toLowerCase().includes(query)
+        );
+    }
 
-        if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No suppliers logged.</td></tr>`;
-            return;
-        }
+    if (filtered.length === 0) {
+        showEmptyState(
+            tbody,
+            "No suppliers found",
+            "There are no suppliers matching your search."
+        );
+        return;
+    }
 
         filtered.forEach(s => {
             const poCount = db.purchaseOrders.filter(po => po.supplierId === s.id).length;
