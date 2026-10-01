@@ -1590,9 +1590,13 @@
         const list = db.purchaseOrders.filter(po => po.status === "Approved" || po.status === "Ordered");
 
         if (list.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No pending deliveries to receive. Create and authorize Purchase Orders first.</td></tr>`;
-            return;
-        }
+    showEmptyState(
+        tbody,
+        "No pending deliveries",
+        "Create and authorize a purchase order before receiving a delivery."
+    );
+    return;
+}
 
         list.forEach(po => {
             const s = db.suppliers.find(sup => sup.id === po.supplierId);
