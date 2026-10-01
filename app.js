@@ -3369,6 +3369,33 @@ function showEmptyState(container, title = "No records found", message = "There 
     if (!container) return;
 
     container.innerHTML = "";
+
+    // Tables require <tr> and <td> inside <tbody>.
+    if (container.tagName === "TBODY") {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+
+        cell.colSpan =
+            container.closest("table")?.querySelectorAll("thead th").length || 1;
+
+        cell.className = "text-center";
+
+        const state = createUIState(
+            "empty-state-template",
+            title,
+            message
+        );
+
+        if (state) {
+            cell.appendChild(state);
+        }
+
+        row.appendChild(cell);
+        container.appendChild(row);
+
+        return;
+    }
+
     const state = createUIState(
         "empty-state-template",
         title,
