@@ -1294,10 +1294,14 @@
             );
         }
 
-        if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No suppliers logged.</td></tr>`;
-            return;
-        }
+       if (filtered.length === 0) {
+    showEmptyState(
+        tbody,
+        "No suppliers found",
+        "There are no suppliers matching your search."
+    );
+    return;
+    }
 
         filtered.forEach(s => {
             const poCount = db.purchaseOrders.filter(po => po.supplierId === s.id).length;
