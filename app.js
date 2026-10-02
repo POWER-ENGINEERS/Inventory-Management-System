@@ -884,7 +884,9 @@ function showToast(title, message, type = "info") {
 
         if (user.role === "Cashier") {
             switchView("sales");
-        } else {
+        } else if (activeView === "dashboard") {
+            // Only choose the dashboard automatically when no other view
+            // has already been selected by the user.
             switchView("dashboard");
         }
 
