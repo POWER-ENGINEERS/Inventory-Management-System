@@ -302,6 +302,11 @@
 
         try {
             const response = await apiRequest("/auth/users");
+
+            // Keep the Employees module synchronized with Laravel accounts.
+            // This also backfills employee records created before this sync was added.
+            syncEmployeeProfilesFromAccounts(response.users || []);
+
             tbody.innerHTML = "";
 
             (response.users || []).forEach(user => {
@@ -330,6 +335,74 @@
         }
     }
 
+    function syncEmployeeProfilesFromAccounts(users) {
+        if (!Array.isArray(users)) return;
+
+        let changed = false;
+
+        users.forEach(user => {
+            // Super Admin is a system account, not an employee record.
+            if (!user || user.role === "Super Admin") return;
+
+            const username = String(user.username || "").trim().toLowerCase();
+            const email = String(user.email || "").trim().toLowerCase();
+
+            if (!username && !email) return;
+
+            let employeeIndex = -1;
+
+            if (user.id !== undefined && user.id !== null) {
+                employeeIndex = (db.employees || []).findIndex(
+                    employee => String(employee.userId || "") === String(user.id)
+                );
+            }
+
+            if (employeeIndex === -1 && username) {
+                employeeIndex = (db.employees || []).findIndex(
+                    employee => String(employee.username || "").trim().toLowerCase() === username
+                );
+            }
+
+            if (employeeIndex === -1 && email) {
+                employeeIndex = (db.employees || []).findIndex(
+                    employee => String(employee.email || "").trim().toLowerCase() === email
+                );
+            }
+
+            const employeeData = {
+                id: employeeIndex >= 0
+                    ? db.employees[employeeIndex].id
+                    : "emp-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+                userId: user.id ?? null,
+                name: user.name || "",
+                position: user.role || "",
+                username: user.username || "",
+                email: user.email || "",
+                phone: employeeIndex >= 0 ? (db.employees[employeeIndex].phone || "") : "",
+                status: user.status || "Active"
+            };
+
+            if (employeeIndex >= 0) {
+                db.employees[employeeIndex] = {
+                    ...db.employees[employeeIndex],
+                    ...employeeData
+                };
+            } else {
+                db.employees.push(employeeData);
+            }
+
+            changed = true;
+        });
+
+        if (changed) {
+            saveDatabase();
+
+            if (typeof renderEmployeesTable === "function" && activeView === "employees") {
+                renderEmployeesTable();
+            }
+        }
+    }
+
     document.getElementById("create-user-account-btn")?.addEventListener("click", function () {
         if (!checkPermission("configure_settings")) return;
         const form = document.getElementById("user-account-form");
@@ -354,7 +427,22 @@
 
         setFormBusy(form, true);
         try {
-            await apiRequest("/auth/users", { method: "POST", body: JSON.stringify(payload) });
+            const response = await apiRequest("/auth/users", {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+
+            const account = response?.user || response?.data || {};
+
+            // Also create the corresponding employee dashboard record.
+            syncEmployeeProfilesFromAccounts([{
+                ...account,
+                name: account.name || payload.name,
+                username: account.username || payload.username,
+                email: account.email || payload.email,
+                role: account.role || payload.role,
+                status: account.status || "Active"
+            }]);
             closeModal("user-account-modal");
             showToast("Account Created", `${payload.name} can now sign in using the Laravel account.`, "success");
             await loadUserAccounts();
