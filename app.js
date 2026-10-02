@@ -189,9 +189,35 @@
     // --------------------------------------------------------------------------
     const API_BASE_URL = window.INVENTORY_API_BASE_URL ||
         (window.location.port === "8000" ? "/api" : "http://127.0.0.1:8000/api");
+    const AUTH_TOKEN_KEY = "inventory_auth_token";
+    const AUTH_USER_KEY = "inventory_auth_user";
+
+    function setAuthSession(user, token) {
+        if (token) localStorage.setItem(AUTH_TOKEN_KEY, token);
+        if (user) localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+    }
+
+    function clearAuthSession() {
+        localStorage.removeItem(AUTH_TOKEN_KEY);
+        localStorage.removeItem(AUTH_USER_KEY);
+    }
+
+    function showAppShell() {
+        const loginContainer = document.getElementById("login-container");
+        const appContainer = document.getElementById("app-container");
+        if (loginContainer) loginContainer.classList.add("hidden");
+        if (appContainer) appContainer.classList.remove("hidden");
+    }
+
+    function showLoginShell() {
+        const loginContainer = document.getElementById("login-container");
+        const appContainer = document.getElementById("app-container");
+        if (appContainer) appContainer.classList.add("hidden");
+        if (loginContainer) loginContainer.classList.remove("hidden");
+    }
 
     async function apiRequest(path, options = {}) {
-        const token = localStorage.getItem("inventory_auth_token");
+        const token = localStorage.getItem(AUTH_TOKEN_KEY);
         const response = await fetch(API_BASE_URL + path, {
             ...options,
             headers: {
@@ -370,7 +396,10 @@
             expiration: "prod-expiration", description: "prod-desc", image: "prod-image",
             supplier_name: "supp-company", contact_person: "supp-contact",
             contact_number: "supp-phone", phone: "supp-phone", email: "supp-email",
-            address: "supp-address"
+            address: "supp-address",
+            name: "emp-name", username: "emp-username",
+            password: "emp-password", password_confirmation: "emp-password",
+            role: "emp-position"
         };
         Object.entries(errors || {}).forEach(([field, messages]) => {
             const input = document.getElementById(fieldMap[field] || field);
@@ -467,41 +496,159 @@
         }
     }
 
-    // Toast Manager
-    function showToast(title, message, type = "info") {
-        const container = document.getElementById("toast-container");
-        const toast = document.createElement("div");
-        toast.className = `toast toast-${type}`;
-        
-        let icon = "fa-circle-info text-primary";
-        if (type === "success") icon = "fa-circle-check text-success";
-        if (type === "warning") icon = "fa-triangle-exclamation text-warning";
-        if (type === "danger") icon = "fa-circle-xmark text-danger";
+    // =========================================
+// WEEK 6: REUSABLE UI STATE HELPERS
+// =========================================
 
-        toast.innerHTML = `
-            <i class="fa-solid ${icon}"></i>
-            <div class="toast-content">
-                <div class="toast-title">${title}</div>
-                <div class="toast-msg">${message}</div>
-            </div>
-            <button class="toast-close">&times;</button>
-        `;
+function createUIState(templateId, title, message) {
+    const template = document.getElementById(templateId);
 
-        // Click to close
-        toast.querySelector(".toast-close").addEventListener("click", (e) => {
-            e.stopPropagation();
-            toast.remove();
-        });
-        toast.addEventListener("click", () => toast.remove());
-
-        container.appendChild(toast);
-
-        // Auto remove
-        setTimeout(() => {
-            toast.style.animation = "slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) reverse forwards";
-            setTimeout(() => toast.remove(), 300);
-        }, 5000);
+    if (!template) {
+        console.error(`UI state template not found: ${templateId}`);
+        return null;
     }
+
+    const state = template.content.cloneNode(true);
+
+    const titleElement = state.querySelector(".ui-state-title");
+    const messageElement = state.querySelector(".ui-state-message");
+
+    if (titleElement && title) {
+        titleElement.textContent = title;
+    }
+
+    if (messageElement && message) {
+        messageElement.textContent = message;
+    }
+
+    return state;
+}
+
+function showEmptyState(
+    container,
+    title = "No records found",
+    message = "There are no records to display."
+) {
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    const state = createUIState(
+        "empty-state-template",
+        title,
+        message
+    );
+
+    if (!state) return;
+
+    if (container.tagName === "TBODY") {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+
+        const columnCount =
+            container.closest("table")?.querySelectorAll("thead th").length || 1;
+
+        cell.colSpan = columnCount;
+        cell.className = "text-center ui-state-table-cell";
+        cell.appendChild(state);
+
+        row.appendChild(cell);
+        container.appendChild(row);
+
+        return;
+    }
+
+    container.appendChild(state);
+}
+
+function showLoadingState(
+    container,
+    title = "Loading...",
+    message = "Please wait while the data is being loaded."
+) {
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    const state = createUIState(
+        "loading-state-template",
+        title,
+        message
+    );
+
+    if (state) {
+        container.appendChild(state);
+    }
+}
+
+function showErrorState(
+    container,
+    title = "Something went wrong",
+    message = "We could not load the requested information.",
+    retryCallback = null
+) {
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    const state = createUIState(
+        "error-state-template",
+        title,
+        message
+    );
+
+    if (!state) return;
+
+    const retryButton = state.querySelector(".ui-state-retry");
+
+    if (retryButton && typeof retryCallback === "function") {
+        retryButton.addEventListener("click", retryCallback);
+    }
+
+    container.appendChild(state);
+}
+
+// =========================================
+// Toast Manager
+// =========================================
+
+function showToast(title, message, type = "info") {
+    const container = document.getElementById("toast-container");
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${type}`;
+
+    let icon = "fa-circle-info text-primary";
+    if (type === "success") icon = "fa-circle-check text-success";
+    if (type === "warning") icon = "fa-triangle-exclamation text-warning";
+    if (type === "danger") icon = "fa-circle-xmark text-danger";
+
+    toast.innerHTML = `
+        <i class="fa-solid ${icon}"></i>
+        <div class="toast-content">
+            <div class="toast-title">${title}</div>
+            <div class="toast-msg">${message}</div>
+        </div>
+        <button class="toast-close">&times;</button>
+    `;
+
+    // Click to close
+    toast.querySelector(".toast-close").addEventListener("click", (e) => {
+        e.stopPropagation();
+        toast.remove();
+    });
+
+    toast.addEventListener("click", () => toast.remove());
+
+    container.appendChild(toast);
+
+    // Auto remove
+    setTimeout(() => {
+        toast.style.animation =
+            "slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) reverse forwards";
+
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+}
 
     // Active View switching
     let activeView = "dashboard";
@@ -651,17 +798,23 @@
         submitButton.disabled = true;
         submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Signing In...';
 
+        console.log("LOGIN DEBUG 1 - sending login request");
+        console.log("LOGIN DEBUG 2 - identifier:", identifier);
+        console.log("LOGIN DEBUG 3 - role:", roleVal);
+
         try {
             const response = await apiRequest("/auth/login", {
                 method: "POST",
                 body: JSON.stringify({ identifier, password, role: roleVal })
             });
 
+
+        console.log("LOGIN DEBUG 4 - Laravel response:", response);
+        console.log("LOGIN DEBUG 5 - token exists:", !!response.token);
+
             const user = response.user;
             const initials = (user.name || "User").split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
-            localStorage.setItem("inventory_auth_token", response.token);
-
-            completeLogin({
+            const sessionUser = {
                 id: user.id,
                 username: user.username,
                 email: user.email,
@@ -669,7 +822,9 @@
                 role: user.role,
                 status: user.status,
                 initials
-            }, response.token);
+            };
+            setAuthSession(sessionUser, response.token);
+            completeLogin(sessionUser, response.token);
         } catch (error) {
             console.error("Laravel login failed:", error);
             showToast("Login Failed", error.message || "Unable to sign in.", "danger");
@@ -707,42 +862,85 @@
         }
     });
 
-    function completeLogin(user, token = null) {
+    function completeLogin(user, token = null, options = {}) {
         currentUser = user;
-        if (token) localStorage.setItem("inventory_auth_token", token);
+        setAuthSession(user, token || localStorage.getItem(AUTH_TOKEN_KEY));
+        showAppShell();
 
-        document.getElementById("login-container").classList.add("hidden");
-        document.getElementById("app-container").classList.remove("hidden");
         applyRolePermissions();
-        logAudit("Login", `User ${user.username} logged in successfully`);
-        showToast("Signed In", `Logged in as ${user.name} (${user.role})`, "success");
 
+        if (!options.restore) {
+            logAudit("Login", `User ${user.username} logged in successfully`);
+            showToast("Signed In", `Logged in as ${user.name} (${user.role})`, "success");
+        }
+
+        // Start background synchronization without changing the authenticated UI.
         syncBackendCatalog();
-        if (user.role === "Super Admin") loadUserAccounts();
 
-        if (user.role === "Cashier") switchView("sales");
-        else switchView("dashboard");
+        if (user.role === "Super Admin") {
+            loadUserAccounts();
+        }
+
+        if (user.role === "Cashier") {
+            switchView("sales");
+        } else {
+            switchView("dashboard");
+        }
 
         triggerSystemAlerts();
     }
 
     document.getElementById("logout-btn").addEventListener("click", async function () {
-        if (!currentUser) return;
+    console.log("🚨 LOGOUT BUTTON CLICKED");
 
+    const userBeforeLogout = currentUser;
+    const token = localStorage.getItem("inventory_auth_token");
+
+    // Clear frontend session FIRST
+    currentUser = null;
+    localStorage.removeItem("inventory_auth_token");
+
+    // Switch UI back to login immediately
+    const appContainer = document.getElementById("app-container");
+    const loginContainer = document.getElementById("login-container");
+    const loginForm = document.getElementById("login-form");
+
+    if (appContainer) {
+        appContainer.classList.add("hidden");
+    }
+
+    if (loginContainer) {
+        loginContainer.classList.remove("hidden");
+    }
+
+    if (loginForm) {
+        loginForm.reset();
+    }
+
+    console.log("✅ Frontend logout complete");
+
+    // Tell Laravel to revoke the token
+    if (token) {
         try {
-            await apiRequest("/auth/logout", { method: "POST" });
+            await fetch(API_BASE_URL + "/auth/logout", {
+                method: "POST",
+                headers: {
+                    "Accept": "application/json",
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+
+            console.log("✅ Laravel token revoked");
         } catch (error) {
-            console.warn("Laravel logout request failed:", error);
+            console.warn("⚠️ Laravel logout request failed:", error);
         }
+    }
 
-        logAudit("Login", `User ${currentUser.username} logged out`);
-        currentUser = null;
-        localStorage.removeItem("inventory_auth_token");
-        document.getElementById("app-container").classList.add("hidden");
-        document.getElementById("login-container").classList.remove("hidden");
-        document.getElementById("login-form").reset();
-    });
-
+    // Record logout after clearing the session
+    if (userBeforeLogout) {
+        console.log(`👋 ${userBeforeLogout.username} logged out`);
+    }
+});
     // Dashboard Stats & Charts
     // --------------------------------------------------------------------------
     function updateDashboardStats() {
@@ -1392,6 +1590,7 @@
             `;
             bndBody.appendChild(tr);
         });
+        }
 
         // Hook edit/delete category
         catBody.querySelectorAll(".edit-cat-btn").forEach(btn => {
@@ -2706,6 +2905,22 @@
         openModal("employee-modal");
     });
 
+    // Laravel roles must match the values accepted by AccountController.
+    function normalizeEmployeeRole(position) {
+        const roleMap = {
+            "SUPER ADMIN": "Super Admin",
+            "SUPERADMIN": "Super Admin",
+            "ADMIN": "Administrator",
+            "ADMINISTRATOR": "Administrator",
+            "CASHIER": "Cashier",
+            "WAREHOUSE": "Warehouse Staff",
+            "WAREHOUSE STAFF": "Warehouse Staff"
+        };
+
+        const raw = String(position || "").trim();
+        return roleMap[raw.toUpperCase()] || raw;
+    }
+
     document.getElementById("employee-form").addEventListener("submit", async function (e) {
         e.preventDefault();
 
@@ -2719,97 +2934,86 @@
         const password = document.getElementById("emp-password").value;
         const phone = document.getElementById("emp-phone").value.trim();
         const email = document.getElementById("emp-email").value.trim().toLowerCase();
+        const role = normalizeEmployeeRole(position);
 
-        if (!name || !position || !username || !email) {
-            showToast("Missing Information", "Please complete all required employee fields.", "warning");
+        if (!name || !username || !email || !role) {
+            showToast("Missing Information", "Please complete the employee name, username, email, and role.", "warning");
             return;
         }
 
-        // Existing employees are still editable in the local employee directory.
-        // New employees are created as real Laravel authentication accounts first.
-        if (id) {
-            const emp = db.employees.find(e => e.id === id);
-
-            if (emp) {
-                emp.name = name;
-                emp.position = position;
-                emp.username = username;
-                if (password) emp.password = password;
-                emp.phone = phone;
-                emp.email = email;
-
-                saveDatabase();
-                closeModal("employee-modal");
-                renderEmployeesTable();
-                logAudit("Settings", `Modified credentials for employee: ${name}`);
-                showToast("Employee Updated", `${name}'s employee record was updated.`, "success");
+        if (!id) {
+            if (!currentUser || currentUser.role !== "Super Admin") {
+                showToast("Access Denied", "Only a Super Admin can create employee login accounts.", "danger");
+                return;
             }
 
-            return;
+            if (password.length < 8) {
+                showToast("Invalid Password", "Employee passwords must contain at least 8 characters.", "warning");
+                return;
+            }
         }
-
-        if (!password || password.length < 8) {
-            showToast("Invalid Password", "A new employee password must be at least 8 characters.", "warning");
-            return;
-        }
-
-        const payload = {
-            name,
-            username,
-            email,
-            password,
-            password_confirmation: password,
-            role: position
-        };
 
         setFormBusy(form, true);
 
         try {
-            // Create the actual login account in Laravel first.
-            await apiRequest("/auth/users", {
-                method: "POST",
-                body: JSON.stringify(payload)
-            });
+            if (id) {
+                const emp = db.employees.find(e => e.id === id);
+                if (!emp) throw new Error("Employee record was not found.");
 
-            // Only add the employee to the local directory after Laravel
-            // successfully creates the authentication account.
-            db.employees.push({
-                id: "emp-" + Date.now(),
-                name,
-                position,
-                username,
-                password,
-                phone,
-                email,
-                status: "Active"
-            });
+                emp.name = name;
+                emp.position = position;
+                emp.phone = phone;
+                emp.email = email;
+
+                showToast("Employee Updated", name + "'s employee profile was updated.", "success");
+                logAudit("Settings", "Modified employee profile: " + name);
+            } else {
+                const response = await apiRequest("/auth/users", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        name,
+                        username,
+                        email,
+                        password,
+                        password_confirmation: password,
+                        role
+                    })
+                });
+
+                const account = response?.user || response?.data || {};
+
+                db.employees.push({
+                    id: "emp-" + Date.now(),
+                    userId: account.id || null,
+                    name,
+                    position: role,
+                    username: account.username || username,
+                    phone,
+                    email: account.email || email,
+                    status: account.status || "Active"
+                });
+
+                logAudit("Settings", "Registered employee login account: " + name + " (" + role + ")");
+                showToast("Employee Account Created", name + " can now log in with the new Laravel account.", "success");
+                if (typeof loadUserAccounts === "function") await loadUserAccounts();
+            }
 
             saveDatabase();
             closeModal("employee-modal");
             renderEmployeesTable();
-
-            if (typeof loadUserAccounts === "function") {
-                await loadUserAccounts();
-            }
-
-            logAudit("Settings", `Registered employee user account: ${name} (${position})`);
-            showToast("Employee Created", `${name} can now log in using the Laravel account.`, "success");
         } catch (error) {
-            console.error("Laravel employee account creation failed:", error);
-
-            if (error.errors) {
-                showFormErrors(form, error.errors);
-            }
-
+            console.error("Employee account creation failed:", error);
+            if (error.errors) showFormErrors(form, error.errors);
             showToast(
-                "Employee Creation Failed",
-                error.message || "Unable to create the Laravel login account.",
+                "Employee Account Failed",
+                error.message || "Laravel could not create the employee login account.",
                 "danger"
             );
         } finally {
             setFormBusy(form, false);
         }
     });
+
     function renderEmployeesTable() {
         const tbody = document.getElementById("employees-table-body");
         tbody.innerHTML = "";
@@ -3620,8 +3824,32 @@
     });
 
     // Bootstrapping App
-    window.addEventListener("DOMContentLoaded", function () {
+    window.addEventListener("DOMContentLoaded", async function () {
         initDatabase();
+
+        const token = localStorage.getItem(AUTH_TOKEN_KEY);
+        const storedUser = localStorage.getItem(AUTH_USER_KEY);
+
+        if (token && storedUser) {
+            try {
+                const user = JSON.parse(storedUser);
+                if (user && user.id && user.role) {
+                    completeLogin(user, token, { restore: true });
+                } else {
+                    clearAuthSession();
+                    showLoginShell();
+                }
+            } catch (error) {
+                console.warn("Saved authentication session could not be restored:", error);
+                clearAuthSession();
+                showLoginShell();
+            }
+        } else {
+            showLoginShell();
+        }
+
+        // Catalog sync is safe after initialization. If the token is invalid,
+        // apiRequest reports the API error without forcing a logout.
         syncBackendCatalog();
     });
 })();
