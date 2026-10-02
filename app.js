@@ -396,7 +396,9 @@
             expiration: "prod-expiration", description: "prod-desc", image: "prod-image",
             supplier_name: "supp-company", contact_person: "supp-contact",
             contact_number: "supp-phone", phone: "supp-phone", email: "supp-email",
-            address: "supp-address"
+            address: "supp-address",
+            name: "emp-name", username: "emp-username", password: "emp-password",
+            password_confirmation: "emp-password", role: "emp-position"
         };
         Object.entries(errors || {}).forEach(([field, messages]) => {
             const input = document.getElementById(fieldMap[field] || field);
@@ -2890,50 +2892,156 @@ function showToast(title, message, type = "info") {
     // Employee Management Module
     // --------------------------------------------------------------------------
     let employeeSearchTimeout = null;
+
+    function normalizeEmployeeRole(position) {
+        const roleMap = {
+            "SUPER ADMIN": "Super Admin",
+            "SUPERADMIN": "Super Admin",
+            "ADMIN": "Administrator",
+            "ADMINISTRATOR": "Administrator",
+            "CASHIER": "Cashier",
+            "WAREHOUSE": "Warehouse Staff",
+            "WAREHOUSE STAFF": "Warehouse Staff"
+        };
+
+        const raw = String(position || "").trim();
+        return roleMap[raw.toUpperCase()] || raw;
+    }
+
     document.getElementById("employees-search").addEventListener("input", function () {
         clearTimeout(employeeSearchTimeout);
         employeeSearchTimeout = setTimeout(renderEmployeesTable, 300);
     });
 
     document.getElementById("add-employee-btn").addEventListener("click", function () {
+        if (!checkPermission("manage_employees")) {
+            showToast("Access Denied", "You do not have permission to manage employees.", "danger");
+            return;
+        }
+
         document.getElementById("employee-form").reset();
         document.getElementById("employee-id").value = "";
         document.getElementById("employee-modal-title").textContent = "Register Employee Staff";
+        clearFormErrors(document.getElementById("employee-form"));
         openModal("employee-modal");
     });
 
-    document.getElementById("employee-form").addEventListener("submit", function (e) {
+    document.getElementById("employee-form").addEventListener("submit", async function (e) {
         e.preventDefault();
+
+        const form = this;
+        clearFormErrors(form);
+
         const id = document.getElementById("employee-id").value;
         const name = document.getElementById("emp-name").value.trim();
         const position = document.getElementById("emp-position").value;
+        const role = normalizeEmployeeRole(position);
         const username = document.getElementById("emp-username").value.trim().toLowerCase();
         const password = document.getElementById("emp-password").value;
         const phone = document.getElementById("emp-phone").value.trim();
-        const email = document.getElementById("emp-email").value.trim();
+        const email = document.getElementById("emp-email").value.trim().toLowerCase();
 
-        if (id) {
-            const emp = db.employees.find(e => e.id === id);
-            if (emp) {
-                emp.name = name;
-                emp.position = position;
-                emp.username = username;
-                if (password) emp.password = password; // Only update password if they filled it in
-                emp.phone = phone;
-                emp.email = email;
-                logAudit("Settings", `Modified credentials for employee: ${name}`);
-            }
-        } else {
-            db.employees.push({
-                id: "emp-" + Date.now(),
-                name, position, username, password: password || "password", phone, email, status: "Active"
-            });
-            logAudit("Settings", `Registered employee user account: ${name} (${position})`);
+        if (!name || !username || !email || !role) {
+            showToast("Missing Information", "Please complete the employee name, username, email, and role.", "warning");
+            return;
         }
 
-        saveDatabase();
-        closeModal("employee-modal");
-        renderEmployeesTable();
+        if (!id && (!currentUser || currentUser.role !== "Super Admin")) {
+            showToast("Access Denied", "Only a Super Admin can create employee login accounts.", "danger");
+            return;
+        }
+
+        if (!id && password.length < 8) {
+            showToast("Invalid Password", "The employee password must contain at least 8 characters.", "warning");
+            return;
+        }
+
+        setFormBusy(form, true);
+
+        try {
+            if (id) {
+                // Employee profile editing remains local because the current
+                // Laravel account API does not expose an account-update endpoint.
+                const emp = db.employees.find(employee => employee.id === id);
+
+                if (!emp) {
+                    throw new Error("Employee record was not found.");
+                }
+
+                emp.name = name;
+                emp.position = role;
+                emp.username = username;
+                emp.phone = phone;
+                emp.email = email;
+
+                saveDatabase();
+                closeModal("employee-modal");
+                renderEmployeesTable();
+
+                logAudit("Settings", `Modified employee profile: ${name}`);
+                showToast("Employee Updated", `${name}'s employee profile was updated.`, "success");
+                return;
+            }
+
+            // CREATE THE REAL LOGIN ACCOUNT IN LARAVEL.
+            // The password is sent only to Laravel and is hashed by the backend.
+            const response = await apiRequest("/auth/users", {
+                method: "POST",
+                body: JSON.stringify({
+                    name,
+                    username,
+                    email,
+                    password,
+                    password_confirmation: password,
+                    role
+                })
+            });
+
+            const account = response?.user || response?.data || {};
+
+            // Keep a local employee profile so the Employees screen can
+            // display the employee's phone number and other profile data.
+            db.employees.push({
+                id: "emp-" + Date.now(),
+                userId: account.id || null,
+                name: account.name || name,
+                position: account.role || role,
+                username: account.username || username,
+                email: account.email || email,
+                phone,
+                status: account.status || "Active"
+            });
+
+            saveDatabase();
+            closeModal("employee-modal");
+            renderEmployeesTable();
+
+            // Refresh the Settings > User Accounts list if it is available.
+            if (typeof loadUserAccounts === "function") {
+                await loadUserAccounts();
+            }
+
+            logAudit("Settings", `Registered employee login account: ${name} (${role})`);
+            showToast(
+                "Employee Account Created",
+                `${name} can now log in using username "${username}" and the password you assigned.`,
+                "success"
+            );
+        } catch (error) {
+            console.error("Employee account creation failed:", error);
+
+            if (error.errors) {
+                showFormErrors(form, error.errors);
+            }
+
+            showToast(
+                "Employee Account Failed",
+                error.message || "Laravel could not create the employee login account.",
+                "danger"
+            );
+        } finally {
+            setFormBusy(form, false);
+        }
     });
 
     function renderEmployeesTable() {
@@ -2941,13 +3049,14 @@ function showToast(title, message, type = "info") {
         tbody.innerHTML = "";
 
         const query = document.getElementById("employees-search").value.trim().toLowerCase();
-        let filtered = db.employees;
+        let filtered = db.employees || [];
 
         if (query) {
-            filtered = filtered.filter(e => 
-                e.name.toLowerCase().includes(query) ||
-                e.position.toLowerCase().includes(query) ||
-                e.username.toLowerCase().includes(query)
+            filtered = filtered.filter(e =>
+                String(e.name || "").toLowerCase().includes(query) ||
+                String(e.position || "").toLowerCase().includes(query) ||
+                String(e.username || "").toLowerCase().includes(query) ||
+                String(e.email || "").toLowerCase().includes(query)
             );
         }
 
@@ -2964,10 +3073,14 @@ function showToast(title, message, type = "info") {
                 <td class="font-mono">${e.username}</td>
                 <td>${e.email}</td>
                 <td>${e.phone || '<span class="text-meta">N/A</span>'}</td>
-                <td><span class="badge badge-success">${e.status}</span></td>
+                <td><span class="badge badge-success">${e.status || "Active"}</span></td>
                 <td class="text-right">
-                    <button class="btn btn-secondary btn-sm edit-emp-btn" data-id="${e.id}"><i class="fa-solid fa-user-pen"></i></button>
-                    <button class="btn btn-danger btn-sm delete-emp-btn" data-id="${e.id}"><i class="fa-solid fa-user-minus"></i></button>
+                    <button class="btn btn-secondary btn-sm edit-emp-btn" data-id="${e.id}" title="Edit">
+                        <i class="fa-solid fa-user-pen"></i>
+                    </button>
+                    <button class="btn btn-danger btn-sm delete-emp-btn" data-id="${e.id}" title="Delete">
+                        <i class="fa-solid fa-user-minus"></i>
+                    </button>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -2975,15 +3088,18 @@ function showToast(title, message, type = "info") {
 
         tbody.querySelectorAll(".edit-emp-btn").forEach(btn => {
             btn.addEventListener("click", function () {
-                const e = db.employees.find(emp => emp.id === this.getAttribute("data-id"));
-                if (e) {
-                    document.getElementById("employee-id").value = e.id;
-                    document.getElementById("emp-name").value = e.name;
-                    document.getElementById("emp-position").value = e.position;
-                    document.getElementById("emp-username").value = e.username;
-                    document.getElementById("emp-phone").value = e.phone;
-                    document.getElementById("emp-email").value = e.email;
-                    document.getElementById("employee-modal-title").textContent = "Edit Employee Credentials";
+                const employee = db.employees.find(emp => emp.id === this.getAttribute("data-id"));
+
+                if (employee) {
+                    document.getElementById("employee-id").value = employee.id;
+                    document.getElementById("emp-name").value = employee.name || "";
+                    document.getElementById("emp-position").value = employee.position || "";
+                    document.getElementById("emp-username").value = employee.username || "";
+                    document.getElementById("emp-password").value = "";
+                    document.getElementById("emp-phone").value = employee.phone || "";
+                    document.getElementById("emp-email").value = employee.email || "";
+                    document.getElementById("employee-modal-title").textContent = "Edit Employee Profile";
+                    clearFormErrors(document.getElementById("employee-form"));
                     openModal("employee-modal");
                 }
             });
@@ -2992,10 +3108,12 @@ function showToast(title, message, type = "info") {
         tbody.querySelectorAll(".delete-emp-btn").forEach(btn => {
             btn.addEventListener("click", function () {
                 const id = this.getAttribute("data-id");
-                if (confirm("Revoke login credentials and delete employee record?")) {
+
+                if (confirm("Delete this employee profile? This does not delete the Laravel login account because the current account API has no delete endpoint.")) {
                     db.employees = db.employees.filter(e => e.id !== id);
                     saveDatabase();
                     renderEmployeesTable();
+                    logAudit("Settings", "Deleted employee profile from the local employee directory.");
                 }
             });
         });
