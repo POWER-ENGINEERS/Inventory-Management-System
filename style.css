@@ -2089,3 +2089,17 @@ tr:hover td {
 .ui-state-retry {
     margin-top: 16px;
 }
+
+/* =========================================
+   WEEK 7: API FORM VALIDATION FEEDBACK
+   ========================================= */
+.week7-field-invalid {
+    border-color: var(--danger-color, #ef4444) !important;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.12);
+}
+.week7-field-error {
+    margin-top: 5px;
+    color: var(--danger-color, #ef4444);
+    font-size: 12px;
+    line-height: 1.4;
+}
