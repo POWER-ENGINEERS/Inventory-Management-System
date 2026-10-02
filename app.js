@@ -179,7 +179,150 @@
     }
 
     function saveDatabase() {
+        // Laravel is the source of truth for products, suppliers, and categories.
+        // localStorage remains only as a fallback/cache for modules not yet migrated.
         localStorage.setItem("dabugss_db", JSON.stringify(db));
+    }
+
+    // --------------------------------------------------------------------------
+    // Week 7: Laravel API data layer
+    // --------------------------------------------------------------------------
+    const API_BASE_URL = window.INVENTORY_API_BASE_URL ||
+        (window.location.port === "8000" ? "/api" : "http://127.0.0.1:8000/api");
+
+    async function apiRequest(path, options = {}) {
+        const response = await fetch(API_BASE_URL + path, {
+            ...options,
+            headers: {
+                "Accept": "application/json",
+                ...(options.body ? { "Content-Type": "application/json" } : {}),
+                ...(options.headers || {})
+            }
+        });
+        let payload = null;
+        try { payload = await response.json(); } catch (_) {}
+        if (!response.ok) {
+            const error = new Error(payload?.message || payload?.error || "The Laravel API request failed.");
+            error.status = response.status;
+            error.errors = payload?.errors || {};
+            throw error;
+        }
+        return payload;
+    }
+
+    function mapBackendProduct(product) {
+        return {
+            id: String(product.product_id ?? product.id),
+            name: product.product_name ?? product.name ?? "",
+            barcode: product.barcode ?? "",
+            SKU: product.sku ?? product.SKU ?? "",
+            category: String(product.category_id ?? product.categoryKey ?? product.category?.category_id ?? ""),
+            brand: product.brand ?? "",
+            supplier: String(product.supplier_id ?? product.supplierKey ?? product.supplier?.supplier_id ?? ""),
+            description: product.description ?? "",
+            purchasePrice: Number(product.purchase_price ?? product.purchasePrice ?? 0),
+            sellingPrice: Number(product.selling_price ?? product.price ?? product.sellingPrice ?? 0),
+            qty: Number(product.quantity ?? product.qty ?? 0),
+            unit: product.unit ?? "pcs",
+            expiration: product.expiration ?? "",
+            status: product.status ?? "Active",
+            image: product.image ?? ""
+        };
+    }
+
+    function mapBackendSupplier(supplier) {
+        return {
+            id: String(supplier.supplier_id ?? supplier.id),
+            company: supplier.supplier_name ?? supplier.company ?? "",
+            contact: supplier.contact_person ?? supplier.contact ?? "",
+            phone: supplier.phone ?? supplier.contact_number ?? "",
+            email: supplier.email ?? "",
+            address: supplier.address ?? ""
+        };
+    }
+
+    function mapBackendCategory(category) {
+        return {
+            id: String(category.category_id ?? category.id),
+            name: category.category_name ?? category.name ?? "",
+            desc: category.description ?? category.desc ?? ""
+        };
+    }
+
+    async function syncBackendCatalog() {
+        try {
+            const [productsResponse, suppliersResponse, categoriesResponse] = await Promise.all([
+                apiRequest("/products"),
+                apiRequest("/suppliers"),
+                apiRequest("/categories")
+            ]);
+            db.products = (productsResponse?.data || []).map(mapBackendProduct);
+            db.suppliers = (suppliersResponse?.data || []).map(mapBackendSupplier);
+            db.categories = (categoriesResponse?.data || []).map(mapBackendCategory);
+            populateDropdowns();
+            if (activeView === "products") renderProductsTable();
+            if (activeView === "suppliers") renderSuppliersTable();
+        } catch (error) {
+            console.error("Laravel catalog sync failed:", error);
+            showToast("Laravel API unavailable", "The frontend is using its local fallback data. Start Laravel and try again.", "warning");
+        }
+    }
+
+    function setFormBusy(form, busy) {
+        const button = form?.querySelector('button[type="submit"]');
+        if (!button) return;
+        if (busy) {
+            if (!button.dataset.originalHtml) button.dataset.originalHtml = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+        } else {
+            button.disabled = false;
+            button.innerHTML = button.dataset.originalHtml || "Save";
+            delete button.dataset.originalHtml;
+        }
+    }
+
+    function clearFormErrors(form) {
+        if (!form) return;
+        form.querySelectorAll(".week7-field-error").forEach(el => el.remove());
+        form.querySelectorAll(".week7-field-invalid").forEach(el => el.classList.remove("week7-field-invalid"));
+    }
+
+    function showFormErrors(form, errors) {
+        clearFormErrors(form);
+        const fieldMap = {
+            product_name: "prod-name", sku: "prod-sku", barcode: "prod-barcode",
+            category_id: "prod-category", brand: "prod-brand", supplier_id: "prod-supplier",
+            quantity: "prod-qty", unit: "prod-unit", price: "prod-selling-price",
+            purchase_price: "prod-purchase-price", selling_price: "prod-selling-price",
+            expiration: "prod-expiration", description: "prod-desc", image: "prod-image",
+            supplier_name: "supp-company", contact_person: "supp-contact",
+            contact_number: "supp-phone", phone: "supp-phone", email: "supp-email",
+            address: "supp-address"
+        };
+        Object.entries(errors || {}).forEach(([field, messages]) => {
+            const input = document.getElementById(fieldMap[field] || field);
+            if (!input) return;
+            input.classList.add("week7-field-invalid");
+            const error = document.createElement("div");
+            error.className = "week7-field-error";
+            error.textContent = Array.isArray(messages) ? messages[0] : String(messages);
+            input.insertAdjacentElement("afterend", error);
+        });
+    }
+
+    async function saveProductToLaravel(payload, id = "") {
+        return apiRequest(id ? `/products/${encodeURIComponent(id)}` : "/products", {
+            method: id ? "PUT" : "POST",
+            body: JSON.stringify(payload)
+        });
+    }
+
+    async function saveSupplierToLaravel(payload, id = "") {
+        return apiRequest(id ? `/suppliers/${encodeURIComponent(id)}` : "/suppliers", {
+            method: id ? "PUT" : "POST",
+            body: JSON.stringify(payload)
+        });
     }
 
     // Role-based Access Rules
@@ -814,97 +957,62 @@
         filterCat.innerHTML = `<option value="">All Categories</option>` + db.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join("");
     }
 
-    document.getElementById("product-form").addEventListener("submit", function (e) {
+    document.getElementById("product-form").addEventListener("submit", async function (e) {
         e.preventDefault();
+        const form = this;
         const id = document.getElementById("product-id").value;
-        const name = document.getElementById("prod-name").value.trim();
-        const sku = document.getElementById("prod-sku").value.trim();
-        const barcode = document.getElementById("prod-barcode").value.trim();
-        const category = document.getElementById("prod-category").value;
-        const brand = document.getElementById("prod-brand").value;
-        const supplier = document.getElementById("prod-supplier").value;
-        const unit = document.getElementById("prod-unit").value;
+        clearFormErrors(form);
+
         const purchasePrice = parseFloat(document.getElementById("prod-purchase-price").value);
         const sellingPrice = parseFloat(document.getElementById("prod-selling-price").value);
-        const qty = parseInt(document.getElementById("prod-qty").value);
-        const expiration = document.getElementById("prod-expiration").value;
-        const desc = document.getElementById("prod-desc").value.trim();
-        const img = document.getElementById("prod-image").value.trim();
+        const qty = parseInt(document.getElementById("prod-qty").value, 10);
 
         if (sellingPrice < purchasePrice) {
             showToast("Pricing Alert", "Selling price should not be lower than the purchase cost.", "warning");
         }
 
-        if (id) {
-            // Edit
-            const prod = db.products.find(p => p.id === id);
-            const oldQty = prod.qty;
-            if (prod) {
-                prod.name = name;
-                prod.SKU = sku;
-                prod.barcode = barcode;
-                prod.category = category;
-                prod.brand = brand;
-                prod.supplier = supplier;
-                prod.unit = unit;
-                prod.purchasePrice = purchasePrice;
-                prod.sellingPrice = sellingPrice;
-                prod.qty = qty;
-                prod.expiration = expiration;
-                prod.description = desc;
-                prod.image = img;
+        const payload = {
+            product_name: document.getElementById("prod-name").value.trim(),
+            sku: document.getElementById("prod-sku").value.trim(),
+            barcode: document.getElementById("prod-barcode").value.trim(),
+            category_id: document.getElementById("prod-category").value,
+            brand: document.getElementById("prod-brand").value,
+            supplier_id: document.getElementById("prod-supplier").value,
+            unit: document.getElementById("prod-unit").value,
+            purchase_price: Number.isFinite(purchasePrice) ? purchasePrice : 0,
+            selling_price: Number.isFinite(sellingPrice) ? sellingPrice : 0,
+            price: Number.isFinite(sellingPrice) ? sellingPrice : 0,
+            quantity: Number.isFinite(qty) ? qty : 0,
+            expiration: document.getElementById("prod-expiration").value || null,
+            description: document.getElementById("prod-desc").value.trim(),
+            image: document.getElementById("prod-image").value.trim(),
+            status: id ? (db.products.find(p => p.id === id)?.status || "Active") : "Active"
+        };
 
-                // If quantity was altered manually, log stock movement history
-                if (qty !== oldQty) {
-                    const delta = qty - oldQty;
-                    const logType = delta > 0 ? "Stock In" : "Stock Out";
-                    db.inventoryHistory.unshift({
-                        id: "h-" + Date.now(),
-                        timestamp: formatDateTime(),
-                        productId: id,
-                        type: "Adjustment",
-                        qty: Math.abs(delta),
-                        source: delta > 0 ? "Manual Adjustment" : "System",
-                        destination: delta > 0 ? "Warehouse Shelf" : "Write-Off",
-                        reason: "Manual Product Catalog update by Administrator",
-                        user: currentUser.name
-                    });
-                }
-
-                logAudit("Product", `Updated product details for ${name} (SKU: ${sku})`);
-                showToast("Product Updated", `Successfully saved changes to ${name}.`, "success");
+        setFormBusy(form, true);
+        try {
+            const response = await saveProductToLaravel(payload, id);
+            const savedProduct = mapBackendProduct(response.data);
+            if (id) {
+                const index = db.products.findIndex(p => p.id === id);
+                if (index >= 0) db.products[index] = savedProduct;
+                showToast("Product Updated", `Successfully saved ${savedProduct.name} in Laravel.`, "success");
+            } else {
+                db.products.push(savedProduct);
+                showToast("Product Registered", `${savedProduct.name} was saved to the Laravel database.`, "success");
             }
-        } else {
-            // New
-            const newProd = {
-                id: "prod-" + Date.now(),
-                name, SKU: sku, barcode, category, brand, supplier, unit,
-                purchasePrice, sellingPrice, qty, expiration, description: desc,
-                image: img, status: "Active"
-            };
-            db.products.push(newProd);
-            
-            // Log inventory initial stock in
-            if (qty > 0) {
-                db.inventoryHistory.unshift({
-                    id: "h-" + Date.now(),
-                    timestamp: formatDateTime(),
-                    productId: newProd.id,
-                    type: "Stock In",
-                    qty: qty,
-                    source: "Supplier Delivery",
-                    destination: "Main Warehouse",
-                    reason: "Initial inventory registration",
-                    user: currentUser.name
-                });
+            closeModal("product-modal");
+            renderProductsTable();
+        } catch (error) {
+            if (error.status === 422) {
+                showFormErrors(form, error.errors);
+                showToast("Validation Error", "Please correct the highlighted fields.", "warning");
+            } else {
+                showToast("Save Failed", error.message || "Could not save the product to Laravel.", "danger");
             }
-            logAudit("Product", `Registered new catalog product: ${name} (SKU: ${sku})`);
-            showToast("Product Registered", `${name} added to the active catalog.`, "success");
+        } finally {
+            setFormBusy(form, false);
         }
-
-        saveDatabase();
-        closeModal("product-modal");
-        renderProductsTable();
     });
 
     function renderProductsTable() {
@@ -1081,31 +1189,35 @@
         openModal("product-modal");
     }
 
-    function toggleProductArchive(id, shouldArchive) {
-        const prod = db.products.find(p => p.id === id);
-        if (prod) {
-            prod.status = shouldArchive ? "Archived" : "Active";
-            saveDatabase();
-            logAudit("Product", `${shouldArchive ? 'Archived' : 'Restored'} product ${prod.name}`);
-            showToast("Database Updated", `Product ${prod.name} has been ${shouldArchive ? 'archived' : 'restored'}.`, "success");
-            renderProductsTable();
-        }
-    }
-
-    function deleteProductPermanently(id) {
+    async function toggleProductArchive(id, shouldArchive) {
         const prod = db.products.find(p => p.id === id);
         if (!prod) return;
-
-        if (confirm(`ARE YOU SURE you want to PERMANENTLY DELETE "${prod.name}"? This action wipes out its inventory record and cannot be undone.`)) {
-            db.products = db.products.filter(p => p.id !== id);
-            saveDatabase();
-            logAudit("Product", `Permanently deleted product: ${prod.name}`);
-            showToast("Product Deleted", "Product record cleared from database.", "success");
+        try {
+            const response = await saveProductToLaravel({ status: shouldArchive ? "Archived" : "Active" }, id);
+            const updated = mapBackendProduct(response.data);
+            const index = db.products.findIndex(p => p.id === id);
+            if (index >= 0) db.products[index] = updated;
+            showToast("Database Updated", `Product ${updated.name} has been updated in Laravel.`, "success");
             renderProductsTable();
+        } catch (error) {
+            showToast("Update Failed", error.message || "Could not update the product status.", "danger");
         }
     }
 
-    // --------------------------------------------------------------------------
+    async function deleteProductPermanently(id) {
+        const prod = db.products.find(p => p.id === id);
+        if (!prod) return;
+        if (!confirm(`ARE YOU SURE you want to PERMANENTLY DELETE "${prod.name}"? This action cannot be undone.`)) return;
+        try {
+            await apiRequest(`/products/${encodeURIComponent(id)}`, { method: "DELETE" });
+            db.products = db.products.filter(p => p.id !== id);
+            showToast("Product Deleted", "Product record was deleted from Laravel.", "success");
+            renderProductsTable();
+        } catch (error) {
+            showToast("Delete Failed", error.message || "Could not delete the product.", "danger");
+        }
+    }
+
     // Category & Brand Management Module
     // --------------------------------------------------------------------------
     document.getElementById("add-category-btn").addEventListener("click", function () {
@@ -1275,36 +1387,46 @@
         openModal("supplier-modal");
     });
 
-    document.getElementById("supplier-form").addEventListener("submit", function (e) {
+    document.getElementById("supplier-form").addEventListener("submit", async function (e) {
         e.preventDefault();
+        const form = this;
         const id = document.getElementById("supplier-id").value;
-        const company = document.getElementById("supp-company").value.trim();
-        const contact = document.getElementById("supp-contact").value.trim();
-        const phone = document.getElementById("supp-phone").value.trim();
-        const email = document.getElementById("supp-email").value.trim();
-        const address = document.getElementById("supp-address").value.trim();
+        clearFormErrors(form);
 
-        if (id) {
-            const sup = db.suppliers.find(s => s.id === id);
-            if (sup) {
-                sup.company = company;
-                sup.contact = contact;
-                sup.phone = phone;
-                sup.email = email;
-                sup.address = address;
-                logAudit("Settings", `Modified Supplier Partner: ${company}`);
+        const payload = {
+            supplier_name: document.getElementById("supp-company").value.trim(),
+            contact_person: document.getElementById("supp-contact").value.trim(),
+            contact_number: document.getElementById("supp-phone").value.trim(),
+            phone: document.getElementById("supp-phone").value.trim(),
+            email: document.getElementById("supp-email").value.trim(),
+            address: document.getElementById("supp-address").value.trim()
+        };
+
+        setFormBusy(form, true);
+        try {
+            const response = await saveSupplierToLaravel(payload, id);
+            const savedSupplier = mapBackendSupplier(response.data);
+            if (id) {
+                const index = db.suppliers.findIndex(s => s.id === id);
+                if (index >= 0) db.suppliers[index] = savedSupplier;
+                showToast("Supplier Updated", `Successfully saved ${savedSupplier.company} in Laravel.`, "success");
+            } else {
+                db.suppliers.push(savedSupplier);
+                showToast("Supplier Created", `${savedSupplier.company} was saved to the Laravel database.`, "success");
             }
-        } else {
-            db.suppliers.push({
-                id: "sup-" + Date.now(),
-                company, contact, phone, email, address
-            });
-            logAudit("Settings", `Created Supplier Partner: ${company}`);
+            closeModal("supplier-modal");
+            populateDropdowns();
+            renderSuppliersTable();
+        } catch (error) {
+            if (error.status === 422) {
+                showFormErrors(form, error.errors);
+                showToast("Validation Error", "Please correct the highlighted fields.", "warning");
+            } else {
+                showToast("Save Failed", error.message || "Could not save the supplier to Laravel.", "danger");
+            }
+        } finally {
+            setFormBusy(form, false);
         }
-
-        saveDatabase();
-        closeModal("supplier-modal");
-        renderSuppliersTable();
     });
 
     function renderSuppliersTable() {
@@ -3360,80 +3482,5 @@
     // Bootstrapping App
     window.addEventListener("DOMContentLoaded", function () {
         initDatabase();
-    });
+        syncBackendCatalog();
 
-    // Expose APIs for inline onclick triggers
-    window.app = {
-        switchView,
-        showReceiptModal
-    };
-
-})();
-/* =========================================
-   WEEK 6: REUSABLE UI STATE HELPERS
-   ========================================= */
-
-function createUIState(templateId, title, message) {
-    const template = document.getElementById(templateId);
-
-    if (!template) {
-        console.error(`UI state template not found: ${templateId}`);
-        return null;
-    }
-
-    const state = template.content.cloneNode(true);
-
-    const titleElement = state.querySelector(".ui-state-title");
-    const messageElement = state.querySelector(".ui-state-message");
-
-    if (titleElement && title) {
-        titleElement.textContent = title;
-    }
-
-    if (messageElement && message) {
-        messageElement.textContent = message;
-    }
-
-    return state;
-}
-
-function showEmptyState(container, title = "No records found", message = "There are no records to display.") {
-    if (!container) return;
-    container.innerHTML = "";
-    const state = createUIState("empty-state-template", title, message);
-    if (!state) return;
-
-    if (container.tagName === "TBODY") {
-        const row = document.createElement("tr");
-        const cell = document.createElement("td");
-        const columnCount = container.closest("table")?.querySelectorAll("thead th").length || 1;
-        cell.colSpan = columnCount;
-        cell.className = "text-center ui-state-table-cell";
-        cell.appendChild(state);
-        row.appendChild(cell);
-        container.appendChild(row);
-        return;
-    }
-    container.appendChild(state);
-}
-
-function showLoadingState(container, title = "Loading...", message = "Please wait while the data is being loaded.") {
-    if (!container) return;
-    container.innerHTML = "";
-    const state = createUIState("loading-state-template", title, message);
-    if (state) container.appendChild(state);
-}
-
-function showErrorState(container, title = "Something went wrong", message = "We could not load the requested information.", retryCallback = null) {
-    if (!container) return;
-    container.innerHTML = "";
-    const state = createUIState("error-state-template", title, message);
-    if (!state) return;
-    const retryButton = state.querySelector(".ui-state-retry");
-    if (retryButton && typeof retryCallback === "function") retryButton.addEventListener("click", retryCallback);
-    container.appendChild(state);
-}
-
-/* =========================================
-   END WEEK 6: REUSABLE UI STATE HELPERS
-   ========================================= */
