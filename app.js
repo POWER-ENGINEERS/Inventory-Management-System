@@ -345,32 +345,53 @@
     }
 
     function onViewLoaded(viewId) {
-        if (viewId === "dashboard") {
-            updateDashboardStats();
-        } else if (viewId === "products") {
-            renderProductsTable();
-        } else if (viewId === "categories") {
-            renderCategoriesAndBrands();
-        } else if (viewId === "suppliers") {
-            renderSuppliersTable();
-        } else if (viewId === "purchase-orders") {
-            renderPurchaseOrdersTable();
-        } else if (viewId === "receiving") {
-            renderReceivingList();
-        } else if (viewId === "inventory") {
-            renderInventoryMovements();
-            checkNearExpirations();
-        } else if (viewId === "sales") {
-            initPOS();
-        } else if (viewId === "customers") {
-            renderCustomersTable();
-        } else if (viewId === "employees") {
-            renderEmployeesTable();
-        } else if (viewId === "reports") {
-            initReportsView();
-        } else if (viewId === "audit-trail") {
-            renderAuditTrail();
-        }
+        const targetView = document.getElementById(`view-${viewId}`);
+        if (!targetView) return;
+
+        const oldHost = targetView.querySelector(".week6-state-host");
+        if (oldHost) oldHost.remove();
+
+        const stateHost = document.createElement("div");
+        stateHost.className = "week6-state-host";
+        targetView.prepend(stateHost);
+
+        showLoadingState(
+            stateHost,
+            "Loading " + viewId.replace(/-/g, " ") + "...",
+            "Please wait while this screen is being prepared."
+        );
+
+        const renderView = () => {
+            if (viewId === "dashboard") updateDashboardStats();
+            else if (viewId === "products") renderProductsTable();
+            else if (viewId === "categories") renderCategoriesAndBrands();
+            else if (viewId === "suppliers") renderSuppliersTable();
+            else if (viewId === "purchase-orders") renderPurchaseOrdersTable();
+            else if (viewId === "receiving") renderReceivingList();
+            else if (viewId === "inventory") {
+                renderInventoryMovements();
+                checkNearExpirations();
+            } else if (viewId === "sales") initPOS();
+            else if (viewId === "customers") renderCustomersTable();
+            else if (viewId === "employees") renderEmployeesTable();
+            else if (viewId === "reports") initReportsView();
+            else if (viewId === "audit-trail") renderAuditTrail();
+        };
+
+        setTimeout(() => {
+            try {
+                renderView();
+                stateHost.remove();
+            } catch (error) {
+                console.error(`Failed to load ${viewId}:`, error);
+                showErrorState(
+                    stateHost,
+                    "Unable to load this screen",
+                    "Something went wrong while loading this section. Please try again.",
+                    () => onViewLoaded(viewId)
+                );
+            }
+        }, 150);
     }
 
     // Modal Control Helpers
@@ -559,7 +580,7 @@
 
         const recent = db.sales.slice(0, 5); // get first 5 elements
         if (recent.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No sales transactions logged today.</td></tr>`;
+            showEmptyState(tbody, "No recent transactions", "There are no sales transactions to display.");
             return;
         }
 
@@ -933,7 +954,7 @@
         }
 
         if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted">No products found matching filters.</td></tr>`;
+            showEmptyState(tbody, "No products found", "There are no products matching your current filters.");
             return;
         }
 
@@ -1156,7 +1177,10 @@
     function renderCategoriesAndBrands() {
         const catBody = document.getElementById("categories-table-body");
         catBody.innerHTML = "";
-        db.categories.forEach(c => {
+        if (db.categories.length === 0) {
+            showEmptyState(catBody, "No categories found", "There are no product categories to display.");
+        } else {
+            db.categories.forEach(c => {
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td><strong>${c.name}</strong></td>
@@ -1168,10 +1192,14 @@
             `;
             catBody.appendChild(tr);
         });
+        }
 
         const bndBody = document.getElementById("brands-table-body");
         bndBody.innerHTML = "";
-        db.brands.forEach(b => {
+        if (db.brands.length === 0) {
+            showEmptyState(bndBody, "No brands found", "There are no product brands to display.");
+        } else {
+            db.brands.forEach(b => {
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td><strong>${b.name}</strong></td>
@@ -1503,7 +1531,7 @@
         }
 
         if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted">No purchase orders found matching filters.</td></tr>`;
+            showEmptyState(tbody, "No purchase orders found", "There are no purchase orders matching your current filters.");
             return;
         }
 
@@ -1590,7 +1618,7 @@
         const list = db.purchaseOrders.filter(po => po.status === "Approved" || po.status === "Ordered");
 
         if (list.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No pending deliveries to receive. Create and authorize Purchase Orders first.</td></tr>`;
+            showEmptyState(tbody, "No pending deliveries", "Create and authorize a purchase order before receiving a delivery.");
             return;
         }
 
@@ -1872,7 +1900,7 @@
         }
 
         if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No stock movements found.</td></tr>`;
+            showEmptyState(tbody, "No stock movements found", "There are no inventory movements matching your current filters.");
             return;
         }
 
@@ -2003,7 +2031,7 @@
         }
 
         if (filtered.length === 0) {
-            grid.innerHTML = `<div class="text-center text-muted py-5 col-span-2">No active products found in catalog.</div>`;
+            showEmptyState(grid, "No active products found", "There are no products matching your search.");
             return;
         }
 
@@ -2421,7 +2449,7 @@
         }
 
         if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No loyalty customers found.</td></tr>`;
+            showEmptyState(tbody, "No loyalty customers found", "There are no customers matching your search.");
             return;
         }
 
@@ -2536,7 +2564,7 @@
         }
 
         if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No employees registered.</td></tr>`;
+            showEmptyState(tbody, "No employees found", "There are no employees matching your search.");
             return;
         }
 
@@ -3035,7 +3063,7 @@
         }
 
         if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No audit logs found matching filters.</td></tr>`;
+            showEmptyState(tbody, "No audit logs found", "There are no audit records matching your current filters.");
             return;
         }
 
@@ -3371,53 +3399,39 @@ function createUIState(templateId, title, message) {
 
 function showEmptyState(container, title = "No records found", message = "There are no records to display.") {
     if (!container) return;
-
     container.innerHTML = "";
-    const state = createUIState(
-        "empty-state-template",
-        title,
-        message
-    );
+    const state = createUIState("empty-state-template", title, message);
+    if (!state) return;
 
-    if (state) {
-        container.appendChild(state);
+    if (container.tagName === "TBODY") {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        const columnCount = container.closest("table")?.querySelectorAll("thead th").length || 1;
+        cell.colSpan = columnCount;
+        cell.className = "text-center ui-state-table-cell";
+        cell.appendChild(state);
+        row.appendChild(cell);
+        container.appendChild(row);
+        return;
     }
+    container.appendChild(state);
 }
 
 function showLoadingState(container, title = "Loading...", message = "Please wait while the data is being loaded.") {
     if (!container) return;
-
     container.innerHTML = "";
-    const state = createUIState(
-        "loading-state-template",
-        title,
-        message
-    );
-
-    if (state) {
-        container.appendChild(state);
-    }
+    const state = createUIState("loading-state-template", title, message);
+    if (state) container.appendChild(state);
 }
 
 function showErrorState(container, title = "Something went wrong", message = "We could not load the requested information.", retryCallback = null) {
     if (!container) return;
-
     container.innerHTML = "";
-    const state = createUIState(
-        "error-state-template",
-        title,
-        message
-    );
-
-    if (state) {
-        const retryButton = state.querySelector(".ui-state-retry");
-
-        if (retryButton && typeof retryCallback === "function") {
-            retryButton.addEventListener("click", retryCallback);
-        }
-
-        container.appendChild(state);
-    }
+    const state = createUIState("error-state-template", title, message);
+    if (!state) return;
+    const retryButton = state.querySelector(".ui-state-retry");
+    if (retryButton && typeof retryCallback === "function") retryButton.addEventListener("click", retryCallback);
+    container.appendChild(state);
 }
 
 /* =========================================
