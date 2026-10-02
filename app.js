@@ -191,10 +191,12 @@
         (window.location.port === "8000" ? "/api" : "http://127.0.0.1:8000/api");
 
     async function apiRequest(path, options = {}) {
+        const token = localStorage.getItem("inventory_auth_token");
         const response = await fetch(API_BASE_URL + path, {
             ...options,
             headers: {
                 "Accept": "application/json",
+                ...(token ? { "Authorization": `Bearer ${token}` } : {}),
                 ...(options.body ? { "Content-Type": "application/json" } : {}),
                 ...(options.headers || {})
             }
@@ -267,6 +269,76 @@
             showToast("Laravel API unavailable", "The frontend is using its local fallback data. Start Laravel and try again.", "warning");
         }
     }
+
+    async function loadUserAccounts() {
+        const tbody = document.getElementById("user-accounts-table-body");
+        if (!tbody || !currentUser || currentUser.role !== "Super Admin") return;
+
+        try {
+            const response = await apiRequest("/auth/users");
+            tbody.innerHTML = "";
+
+            (response.users || []).forEach(user => {
+                const tr = document.createElement("tr");
+                [user.name, user.username, user.email, user.role, user.status].forEach((value, index) => {
+                    const td = document.createElement("td");
+                    if (index === 3) {
+                        const badge = document.createElement("span");
+                        badge.className = "badge badge-info";
+                        badge.textContent = value;
+                        td.appendChild(badge);
+                    } else {
+                        td.textContent = value ?? "";
+                    }
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+
+            if (!response.users?.length) {
+                showEmptyState(tbody, "No user accounts found", "Create an account to give a staff member access to the system.");
+            }
+        } catch (error) {
+            console.error("Unable to load user accounts:", error);
+            showErrorState(tbody, "Unable to load accounts", error.message || "The Laravel account service is unavailable.", loadUserAccounts);
+        }
+    }
+
+    document.getElementById("create-user-account-btn")?.addEventListener("click", function () {
+        if (!checkPermission("configure_settings")) return;
+        const form = document.getElementById("user-account-form");
+        form.reset();
+        clearFormErrors(form);
+        openModal("user-account-modal");
+    });
+
+    document.getElementById("user-account-form")?.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const form = this;
+        clearFormErrors(form);
+
+        const payload = {
+            name: document.getElementById("account-name").value.trim(),
+            username: document.getElementById("account-username").value.trim().toLowerCase(),
+            email: document.getElementById("account-email").value.trim().toLowerCase(),
+            password: document.getElementById("account-password").value,
+            password_confirmation: document.getElementById("account-password-confirmation").value,
+            role: document.getElementById("account-role").value
+        };
+
+        setFormBusy(form, true);
+        try {
+            await apiRequest("/auth/users", { method: "POST", body: JSON.stringify(payload) });
+            closeModal("user-account-modal");
+            showToast("Account Created", `${payload.name} can now sign in using the Laravel account.`, "success");
+            await loadUserAccounts();
+        } catch (error) {
+            if (error.errors) showFormErrors(form, error.errors);
+            showToast("Account Creation Failed", error.message || "Unable to create the account.", "danger");
+        } finally {
+            setFormBusy(form, false);
+        }
+    });
 
     function setFormBusy(form, busy) {
         const button = form?.querySelector('button[type="submit"]');
@@ -517,6 +589,7 @@
             } else if (viewId === "sales") initPOS();
             else if (viewId === "customers") renderCustomersTable();
             else if (viewId === "employees") renderEmployeesTable();
+            else if (viewId === "settings") loadUserAccounts();
             else if (viewId === "reports") initReportsView();
             else if (viewId === "audit-trail") renderAuditTrail();
         };
@@ -565,54 +638,44 @@
     // --------------------------------------------------------------------------
     // Auth & Logins
     // --------------------------------------------------------------------------
-    document.getElementById("login-form").addEventListener("submit", function (e) {
+    document.getElementById("login-form").addEventListener("submit", async function (e) {
         e.preventDefault();
+
         const roleVal = document.getElementById("login-role-select").value;
-        const userVal = document.getElementById("login-username").value.trim().toLowerCase();
-        const pwdVal = document.getElementById("login-password").value;
-        const enable2fa = false;
+        const identifier = document.getElementById("login-username").value.trim().toLowerCase();
+        const password = document.getElementById("login-password").value;
 
-        let foundUser = null;
-        if (roleVal === "Super Admin") {
-            if (userVal === "superadmin" && pwdVal === "password") {
-                foundUser = {
-                    username: "superadmin",
-                    name: "Super Admin",
-                    role: "Super Admin",
-                    initials: "SA"
-                };
-            }
-        } else {
-            // Check employees list matching username, role, and password
-            const emp = db.employees.find(e => e.username.toLowerCase() === userVal && e.position === roleVal && e.status === "Active");
-            if (emp && pwdVal === (emp.password || "password")) {
-                foundUser = {
-                    username: emp.username,
-                    name: emp.name,
-                    role: emp.position,
-                    initials: emp.name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase()
-                };
-            }
-        }
+        if (!identifier || !password) return;
 
-        if (foundUser) {
-            if (enable2fa) {
-                // Show 2FA input modal
-                openModal("mfa-modal");
-                document.getElementById("submit-mfa-btn").onclick = function () {
-                    const code = document.getElementById("mfa-code").value.trim();
-                    if (code === "123456") {
-                        closeModal("mfa-modal");
-                        completeLogin(foundUser);
-                    } else {
-                        showToast("Verification Failed", "Incorrect 2FA code. Use 123456.", "danger");
-                    }
-                };
-            } else {
-                completeLogin(foundUser);
-            }
-        } else {
-            showToast("Login Failed", "Invalid username or password for the selected account type.", "danger");
+        const submitButton = this.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Signing In...';
+
+        try {
+            const response = await apiRequest("/auth/login", {
+                method: "POST",
+                body: JSON.stringify({ identifier, password, role: roleVal })
+            });
+
+            const user = response.user;
+            const initials = (user.name || "User").split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+            localStorage.setItem("inventory_auth_token", response.token);
+
+            completeLogin({
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+                status: user.status,
+                initials
+            }, response.token);
+        } catch (error) {
+            console.error("Laravel login failed:", error);
+            showToast("Login Failed", error.message || "Unable to sign in.", "danger");
+        } finally {
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<span>Sign In</span><i class="fa-solid fa-right-to-bracket"></i>';
         }
     });
 
@@ -644,35 +707,42 @@
         }
     });
 
-    function completeLogin(user) {
+    function completeLogin(user, token = null) {
         currentUser = user;
+        if (token) localStorage.setItem("inventory_auth_token", token);
+
         document.getElementById("login-container").classList.add("hidden");
         document.getElementById("app-container").classList.remove("hidden");
         applyRolePermissions();
         logAudit("Login", `User ${user.username} logged in successfully`);
         showToast("Signed In", `Logged in as ${user.name} (${user.role})`, "success");
-        
-        // Auto land on POS for cashiers, dashboard for others
-        if (user.role === "Cashier") {
-            switchView("sales");
-        } else {
-            switchView("dashboard");
-        }
-        
-        // Start background warning loops
+
+        syncBackendCatalog();
+        if (user.role === "Super Admin") loadUserAccounts();
+
+        if (user.role === "Cashier") switchView("sales");
+        else switchView("dashboard");
+
         triggerSystemAlerts();
     }
 
-    document.getElementById("logout-btn").addEventListener("click", function () {
+    document.getElementById("logout-btn").addEventListener("click", async function () {
         if (!currentUser) return;
+
+        try {
+            await apiRequest("/auth/logout", { method: "POST" });
+        } catch (error) {
+            console.warn("Laravel logout request failed:", error);
+        }
+
         logAudit("Login", `User ${currentUser.username} logged out`);
         currentUser = null;
+        localStorage.removeItem("inventory_auth_token");
         document.getElementById("app-container").classList.add("hidden");
         document.getElementById("login-container").classList.remove("hidden");
         document.getElementById("login-form").reset();
     });
 
-    // --------------------------------------------------------------------------
     // Dashboard Stats & Charts
     // --------------------------------------------------------------------------
     function updateDashboardStats() {
