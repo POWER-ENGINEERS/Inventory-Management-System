@@ -76,11 +76,6 @@
             { id: "cust-1", name: "Jane Doe", phone: "555-0199", email: "jane@example.com", address: "742 Evergreen Terrace, Springfield", points: 120 },
             { id: "cust-2", name: "John Smith", phone: "555-0144", email: "john@example.com", address: "555 Elm Street, Metropolis", points: 45 }
         ],
-        employees: [
-            { id: "emp-1", name: "Robert Johnson", position: "Administrator", username: "admin", email: "robert@company.com", phone: "555-9012", status: "Active" },
-            { id: "emp-2", name: "Emily Watson", position: "Cashier", username: "cashier", email: "emily@company.com", phone: "555-8833", status: "Active" },
-            { id: "emp-3", name: "David Miller", position: "Warehouse Staff", username: "warehouse", email: "david@company.com", phone: "555-4512", status: "Active" }
-        ],
         purchaseOrders: [
             {
                 id: "po-10001", poNumber: "PO-10001", supplierId: "sup-1", orderDate: getFutureDate(-5),
@@ -163,7 +158,6 @@
                 if (!db.brands) db.brands = [...SEED_DATA.brands];
                 if (!db.suppliers) db.suppliers = [...SEED_DATA.suppliers];
                 if (!db.customers) db.customers = [...SEED_DATA.customers];
-                if (!db.employees) db.employees = [...SEED_DATA.employees];
                 if (!db.purchaseOrders) db.purchaseOrders = [...SEED_DATA.purchaseOrders];
                 if (!db.sales) db.sales = [...SEED_DATA.sales];
                 if (!db.inventoryHistory) db.inventoryHistory = [...SEED_DATA.inventoryHistory];
@@ -303,10 +297,6 @@
         try {
             const response = await apiRequest("/auth/users");
 
-            // Keep the Employees module synchronized with Laravel accounts.
-            // This also backfills employee records created before this sync was added.
-            syncEmployeeProfilesFromAccounts(response.users || []);
-
             tbody.innerHTML = "";
 
             (response.users || []).forEach(user => {
@@ -332,74 +322,6 @@
         } catch (error) {
             console.error("Unable to load user accounts:", error);
             showErrorState(tbody, "Unable to load accounts", error.message || "The Laravel account service is unavailable.", loadUserAccounts);
-        }
-    }
-
-    function syncEmployeeProfilesFromAccounts(users) {
-        if (!Array.isArray(users)) return;
-
-        let changed = false;
-
-        users.forEach(user => {
-            // Super Admin is a system account, not an employee record.
-            if (!user || user.role === "Super Admin") return;
-
-            const username = String(user.username || "").trim().toLowerCase();
-            const email = String(user.email || "").trim().toLowerCase();
-
-            if (!username && !email) return;
-
-            let employeeIndex = -1;
-
-            if (user.id !== undefined && user.id !== null) {
-                employeeIndex = (db.employees || []).findIndex(
-                    employee => String(employee.userId || "") === String(user.id)
-                );
-            }
-
-            if (employeeIndex === -1 && username) {
-                employeeIndex = (db.employees || []).findIndex(
-                    employee => String(employee.username || "").trim().toLowerCase() === username
-                );
-            }
-
-            if (employeeIndex === -1 && email) {
-                employeeIndex = (db.employees || []).findIndex(
-                    employee => String(employee.email || "").trim().toLowerCase() === email
-                );
-            }
-
-            const employeeData = {
-                id: employeeIndex >= 0
-                    ? db.employees[employeeIndex].id
-                    : "emp-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7),
-                userId: user.id ?? null,
-                name: user.name || "",
-                position: user.role || "",
-                username: user.username || "",
-                email: user.email || "",
-                phone: employeeIndex >= 0 ? (db.employees[employeeIndex].phone || "") : "",
-                status: user.status || "Active"
-            };
-
-            if (employeeIndex >= 0) {
-                db.employees[employeeIndex] = {
-                    ...db.employees[employeeIndex],
-                    ...employeeData
-                };
-            } else {
-                db.employees.push(employeeData);
-            }
-
-            changed = true;
-        });
-
-        if (changed) {
-            saveDatabase();
-
-            if (typeof renderEmployeesTable === "function" && activeView === "employees") {
-                renderEmployeesTable();
-            }
         }
     }
 
@@ -432,20 +354,12 @@
                 body: JSON.stringify(payload)
             });
 
-            const account = response?.user || response?.data || {};
-
-            // Also create the corresponding employee dashboard record.
-            syncEmployeeProfilesFromAccounts([{
-                ...account,
-                name: account.name || payload.name,
-                username: account.username || payload.username,
-                email: account.email || payload.email,
-                role: account.role || payload.role,
-                status: account.status || "Active"
-            }]);
             closeModal("user-account-modal");
             showToast("Account Created", `${payload.name} can now sign in using the Laravel account.`, "success");
             await loadUserAccounts();
+            if (typeof loadEmployeesFromLaravel === "function") {
+                await loadEmployeesFromLaravel();
+            }
         } catch (error) {
             if (error.errors) showFormErrors(form, error.errors);
             showToast("Account Creation Failed", error.message || "Unable to create the account.", "danger");
@@ -822,7 +736,7 @@ function showToast(title, message, type = "info") {
                 checkNearExpirations();
             } else if (viewId === "sales") initPOS();
             else if (viewId === "customers") renderCustomersTable();
-            else if (viewId === "employees") renderEmployeesTable();
+            else if (viewId === "employees") loadEmployeesFromLaravel();
             else if (viewId === "settings") loadUserAccounts();
             else if (viewId === "reports") initReportsView();
             else if (viewId === "audit-trail") renderAuditTrail();
@@ -2977,9 +2891,10 @@ function showToast(title, message, type = "info") {
     }
 
     // --------------------------------------------------------------------------
-    // Employee Management Module
+    // Employee Management Module - Laravel-backed
     // --------------------------------------------------------------------------
     let employeeSearchTimeout = null;
+    let employeeAccounts = [];
 
     function normalizeEmployeeRole(position) {
         const roleMap = {
@@ -2996,21 +2911,65 @@ function showToast(title, message, type = "info") {
         return roleMap[raw.toUpperCase()] || raw;
     }
 
-    document.getElementById("employees-search").addEventListener("input", function () {
-        clearTimeout(employeeSearchTimeout);
-        employeeSearchTimeout = setTimeout(renderEmployeesTable, 300);
-    });
+    async function loadEmployeesFromLaravel() {
+        const tbody = document.getElementById("employees-table-body");
+        if (!tbody) return;
 
-    document.getElementById("add-employee-btn").addEventListener("click", function () {
-        if (!checkPermission("manage_employees")) {
-            showToast("Access Denied", "You do not have permission to manage employees.", "danger");
+        if (!currentUser || currentUser.role !== "Super Admin") {
+            employeeAccounts = [];
+            renderEmployeesTable([]);
             return;
         }
 
-        document.getElementById("employee-form").reset();
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center text-muted">Loading employee accounts...</td>
+            </tr>
+        `;
+
+        try {
+            const response = await apiRequest("/auth/users");
+
+            employeeAccounts = (response.users || [])
+                .filter(user => user.role !== "Super Admin")
+                .map(user => ({
+                    id: user.id,
+                    name: user.name || "",
+                    position: user.role || "",
+                    username: user.username || "",
+                    email: user.email || "",
+                    status: user.status || "Active"
+                }));
+
+            renderEmployeesTable(employeeAccounts);
+        } catch (error) {
+            console.error("Unable to load employee accounts:", error);
+            employeeAccounts = [];
+            showErrorState(
+                tbody,
+                "Unable to load employees",
+                error.message || "The Laravel employee account service is unavailable.",
+                loadEmployeesFromLaravel
+            );
+        }
+    }
+
+    document.getElementById("employees-search").addEventListener("input", function () {
+        clearTimeout(employeeSearchTimeout);
+        employeeSearchTimeout = setTimeout(() => renderEmployeesTable(employeeAccounts), 300);
+    });
+
+    document.getElementById("add-employee-btn").addEventListener("click", function () {
+        if (!currentUser || currentUser.role !== "Super Admin") {
+            showToast("Access Denied", "Only the Super Admin can create employee accounts.", "danger");
+            return;
+        }
+
+        const form = document.getElementById("employee-form");
+        form.reset();
         document.getElementById("employee-id").value = "";
         document.getElementById("employee-modal-title").textContent = "Register Employee Staff";
-        clearFormErrors(document.getElementById("employee-form"));
+        clearFormErrors(form);
         openModal("employee-modal");
     });
 
@@ -3020,26 +2979,28 @@ function showToast(title, message, type = "info") {
         const form = this;
         clearFormErrors(form);
 
-        const id = document.getElementById("employee-id").value;
+        if (!currentUser || currentUser.role !== "Super Admin") {
+            showToast("Access Denied", "Only the Super Admin can create employee accounts.", "danger");
+            return;
+        }
+
         const name = document.getElementById("emp-name").value.trim();
         const position = document.getElementById("emp-position").value;
         const role = normalizeEmployeeRole(position);
         const username = document.getElementById("emp-username").value.trim().toLowerCase();
         const password = document.getElementById("emp-password").value;
-        const phone = document.getElementById("emp-phone").value.trim();
         const email = document.getElementById("emp-email").value.trim().toLowerCase();
 
-        if (!name || !username || !email || !role) {
-            showToast("Missing Information", "Please complete the employee name, username, email, and role.", "warning");
+        if (!name || !username || !email || !role || !password) {
+            showToast(
+                "Missing Information",
+                "Please complete the employee name, username, email, role, and password.",
+                "warning"
+            );
             return;
         }
 
-        if (!id && (!currentUser || currentUser.role !== "Super Admin")) {
-            showToast("Access Denied", "Only a Super Admin can create employee login accounts.", "danger");
-            return;
-        }
-
-        if (!id && password.length < 8) {
+        if (password.length < 8) {
             showToast("Invalid Password", "The employee password must contain at least 8 characters.", "warning");
             return;
         }
@@ -3047,33 +3008,7 @@ function showToast(title, message, type = "info") {
         setFormBusy(form, true);
 
         try {
-            if (id) {
-                // Employee profile editing remains local because the current
-                // Laravel account API does not expose an account-update endpoint.
-                const emp = db.employees.find(employee => employee.id === id);
-
-                if (!emp) {
-                    throw new Error("Employee record was not found.");
-                }
-
-                emp.name = name;
-                emp.position = role;
-                emp.username = username;
-                emp.phone = phone;
-                emp.email = email;
-
-                saveDatabase();
-                closeModal("employee-modal");
-                renderEmployeesTable();
-
-                logAudit("Settings", `Modified employee profile: ${name}`);
-                showToast("Employee Updated", `${name}'s employee profile was updated.`, "success");
-                return;
-            }
-
-            // CREATE THE REAL LOGIN ACCOUNT IN LARAVEL.
-            // The password is sent only to Laravel and is hashed by the backend.
-            const response = await apiRequest("/auth/users", {
+            await apiRequest("/auth/users", {
                 method: "POST",
                 body: JSON.stringify({
                     name,
@@ -3085,36 +3020,21 @@ function showToast(title, message, type = "info") {
                 })
             });
 
-            const account = response?.user || response?.data || {};
-
-            // Keep a local employee profile so the Employees screen can
-            // display the employee's phone number and other profile data.
-            db.employees.push({
-                id: "emp-" + Date.now(),
-                userId: account.id || null,
-                name: account.name || name,
-                position: account.role || role,
-                username: account.username || username,
-                email: account.email || email,
-                phone,
-                status: account.status || "Active"
-            });
-
-            saveDatabase();
             closeModal("employee-modal");
-            renderEmployeesTable();
 
-            // Refresh the Settings > User Accounts list if it is available.
-            if (typeof loadUserAccounts === "function") {
-                await loadUserAccounts();
-            }
+            logAudit(
+                "Settings",
+                `Registered employee login account: ${name} (${role})`
+            );
 
-            logAudit("Settings", `Registered employee login account: ${name} (${role})`);
             showToast(
                 "Employee Account Created",
                 `${name} can now log in using username "${username}" and the password you assigned.`,
                 "success"
             );
+
+            await loadEmployeesFromLaravel();
+            await loadUserAccounts();
         } catch (error) {
             console.error("Employee account creation failed:", error);
 
@@ -3132,78 +3052,49 @@ function showToast(title, message, type = "info") {
         }
     });
 
-    function renderEmployeesTable() {
+    function renderEmployeesTable(employees = employeeAccounts) {
         const tbody = document.getElementById("employees-table-body");
-        tbody.innerHTML = "";
+        if (!tbody) return;
 
         const query = document.getElementById("employees-search").value.trim().toLowerCase();
-        let filtered = db.employees || [];
+
+        let filtered = employees || [];
 
         if (query) {
-            filtered = filtered.filter(e =>
-                String(e.name || "").toLowerCase().includes(query) ||
-                String(e.position || "").toLowerCase().includes(query) ||
-                String(e.username || "").toLowerCase().includes(query) ||
-                String(e.email || "").toLowerCase().includes(query)
+            filtered = filtered.filter(employee =>
+                String(employee.name || "").toLowerCase().includes(query) ||
+                String(employee.position || "").toLowerCase().includes(query) ||
+                String(employee.username || "").toLowerCase().includes(query) ||
+                String(employee.email || "").toLowerCase().includes(query)
             );
         }
 
+        tbody.innerHTML = "";
+
         if (filtered.length === 0) {
-            showEmptyState(tbody, "No employees found", "There are no employees matching your search.");
+            showEmptyState(
+                tbody,
+                "No employees found",
+                query
+                    ? "There are no employees matching your search."
+                    : "No employee accounts have been created yet."
+            );
             return;
         }
 
-        filtered.forEach(e => {
+        filtered.forEach(employee => {
             const tr = document.createElement("tr");
             tr.innerHTML = `
-                <td><strong>${e.name}</strong></td>
-                <td><span class="badge badge-info">${e.position}</span></td>
-                <td class="font-mono">${e.username}</td>
-                <td>${e.email}</td>
-                <td>${e.phone || '<span class="text-meta">N/A</span>'}</td>
-                <td><span class="badge badge-success">${e.status || "Active"}</span></td>
+                <td><strong>${employee.name}</strong></td>
+                <td><span class="badge badge-info">${employee.position}</span></td>
+                <td class="font-mono">${employee.username}</td>
+                <td>${employee.email}</td>
+                <td><span class="badge badge-success">${employee.status || "Active"}</span></td>
                 <td class="text-right">
-                    <button class="btn btn-secondary btn-sm edit-emp-btn" data-id="${e.id}" title="Edit">
-                        <i class="fa-solid fa-user-pen"></i>
-                    </button>
-                    <button class="btn btn-danger btn-sm delete-emp-btn" data-id="${e.id}" title="Delete">
-                        <i class="fa-solid fa-user-minus"></i>
-                    </button>
+                    <span class="text-muted text-meta">Laravel Account</span>
                 </td>
             `;
             tbody.appendChild(tr);
-        });
-
-        tbody.querySelectorAll(".edit-emp-btn").forEach(btn => {
-            btn.addEventListener("click", function () {
-                const employee = db.employees.find(emp => emp.id === this.getAttribute("data-id"));
-
-                if (employee) {
-                    document.getElementById("employee-id").value = employee.id;
-                    document.getElementById("emp-name").value = employee.name || "";
-                    document.getElementById("emp-position").value = employee.position || "";
-                    document.getElementById("emp-username").value = employee.username || "";
-                    document.getElementById("emp-password").value = "";
-                    document.getElementById("emp-phone").value = employee.phone || "";
-                    document.getElementById("emp-email").value = employee.email || "";
-                    document.getElementById("employee-modal-title").textContent = "Edit Employee Profile";
-                    clearFormErrors(document.getElementById("employee-form"));
-                    openModal("employee-modal");
-                }
-            });
-        });
-
-        tbody.querySelectorAll(".delete-emp-btn").forEach(btn => {
-            btn.addEventListener("click", function () {
-                const id = this.getAttribute("data-id");
-
-                if (confirm("Delete this employee profile? This does not delete the Laravel login account because the current account API has no delete endpoint.")) {
-                    db.employees = db.employees.filter(e => e.id !== id);
-                    saveDatabase();
-                    renderEmployeesTable();
-                    logAudit("Settings", "Deleted employee profile from the local employee directory.");
-                }
-            });
         });
     }
 
