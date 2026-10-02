@@ -396,10 +396,7 @@
             expiration: "prod-expiration", description: "prod-desc", image: "prod-image",
             supplier_name: "supp-company", contact_person: "supp-contact",
             contact_number: "supp-phone", phone: "supp-phone", email: "supp-email",
-            address: "supp-address",
-            name: "emp-name", username: "emp-username",
-            password: "emp-password", password_confirmation: "emp-password",
-            role: "emp-position"
+            address: "supp-address"
         };
         Object.entries(errors || {}).forEach(([field, messages]) => {
             const input = document.getElementById(fieldMap[field] || field);
@@ -2905,113 +2902,38 @@ function showToast(title, message, type = "info") {
         openModal("employee-modal");
     });
 
-    // Laravel roles must match the values accepted by AccountController.
-    function normalizeEmployeeRole(position) {
-        const roleMap = {
-            "SUPER ADMIN": "Super Admin",
-            "SUPERADMIN": "Super Admin",
-            "ADMIN": "Administrator",
-            "ADMINISTRATOR": "Administrator",
-            "CASHIER": "Cashier",
-            "WAREHOUSE": "Warehouse Staff",
-            "WAREHOUSE STAFF": "Warehouse Staff"
-        };
-
-        const raw = String(position || "").trim();
-        return roleMap[raw.toUpperCase()] || raw;
-    }
-
-    document.getElementById("employee-form").addEventListener("submit", async function (e) {
+    document.getElementById("employee-form").addEventListener("submit", function (e) {
         e.preventDefault();
-
-        const form = this;
-        clearFormErrors(form);
-
         const id = document.getElementById("employee-id").value;
         const name = document.getElementById("emp-name").value.trim();
         const position = document.getElementById("emp-position").value;
         const username = document.getElementById("emp-username").value.trim().toLowerCase();
         const password = document.getElementById("emp-password").value;
         const phone = document.getElementById("emp-phone").value.trim();
-        const email = document.getElementById("emp-email").value.trim().toLowerCase();
-        const role = normalizeEmployeeRole(position);
+        const email = document.getElementById("emp-email").value.trim();
 
-        if (!name || !username || !email || !role) {
-            showToast("Missing Information", "Please complete the employee name, username, email, and role.", "warning");
-            return;
-        }
-
-        if (!id) {
-            if (!currentUser || currentUser.role !== "Super Admin") {
-                showToast("Access Denied", "Only a Super Admin can create employee login accounts.", "danger");
-                return;
-            }
-
-            if (password.length < 8) {
-                showToast("Invalid Password", "Employee passwords must contain at least 8 characters.", "warning");
-                return;
-            }
-        }
-
-        setFormBusy(form, true);
-
-        try {
-            if (id) {
-                const emp = db.employees.find(e => e.id === id);
-                if (!emp) throw new Error("Employee record was not found.");
-
+        if (id) {
+            const emp = db.employees.find(e => e.id === id);
+            if (emp) {
                 emp.name = name;
                 emp.position = position;
+                emp.username = username;
+                if (password) emp.password = password; // Only update password if they filled it in
                 emp.phone = phone;
                 emp.email = email;
-
-                showToast("Employee Updated", name + "'s employee profile was updated.", "success");
-                logAudit("Settings", "Modified employee profile: " + name);
-            } else {
-                const response = await apiRequest("/auth/users", {
-                    method: "POST",
-                    body: JSON.stringify({
-                        name,
-                        username,
-                        email,
-                        password,
-                        password_confirmation: password,
-                        role
-                    })
-                });
-
-                const account = response?.user || response?.data || {};
-
-                db.employees.push({
-                    id: "emp-" + Date.now(),
-                    userId: account.id || null,
-                    name,
-                    position: role,
-                    username: account.username || username,
-                    phone,
-                    email: account.email || email,
-                    status: account.status || "Active"
-                });
-
-                logAudit("Settings", "Registered employee login account: " + name + " (" + role + ")");
-                showToast("Employee Account Created", name + " can now log in with the new Laravel account.", "success");
-                if (typeof loadUserAccounts === "function") await loadUserAccounts();
+                logAudit("Settings", `Modified credentials for employee: ${name}`);
             }
-
-            saveDatabase();
-            closeModal("employee-modal");
-            renderEmployeesTable();
-        } catch (error) {
-            console.error("Employee account creation failed:", error);
-            if (error.errors) showFormErrors(form, error.errors);
-            showToast(
-                "Employee Account Failed",
-                error.message || "Laravel could not create the employee login account.",
-                "danger"
-            );
-        } finally {
-            setFormBusy(form, false);
+        } else {
+            db.employees.push({
+                id: "emp-" + Date.now(),
+                name, position, username, password: password || "password", phone, email, status: "Active"
+            });
+            logAudit("Settings", `Registered employee user account: ${name} (${position})`);
         }
+
+        saveDatabase();
+        closeModal("employee-modal");
+        renderEmployeesTable();
     });
 
     function renderEmployeesTable() {
