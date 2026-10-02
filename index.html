@@ -44,7 +44,7 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="login-username"><i class="fa-solid fa-user"></i> Username</label>
+                    <label for="login-username"><i class="fa-solid fa-user"></i> Username or Email</label>
                     <input type="text" id="login-username" placeholder="e.g. superadmin" required autocomplete="username">
                 </div>
                 <div class="form-group">
@@ -1038,6 +1038,63 @@
 <!-- END WEEK 6: REUSABLE UI STATES -->
 
     <!-- MODAL DIALOGS FOR FORMS -->
+
+    <!-- Laravel User Account Modal -->
+    <div id="user-account-modal" class="modal">
+        <div class="modal-content modal-md">
+            <div class="modal-header">
+                <h3>Create User Account</h3>
+                <button class="close-modal-btn">&times;</button>
+            </div>
+            <form id="user-account-form">
+                <div class="modal-body">
+                    <p class="text-meta mb-4">This account will be stored in the Laravel users table and can sign in through the system login.</p>
+
+                    <div class="form-group">
+                        <label for="account-name">Full Name *</label>
+                        <input type="text" id="account-name" required placeholder="e.g. Juan Dela Cruz">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="account-username">Username *</label>
+                        <input type="text" id="account-username" required pattern="[A-Za-z0-9_-]+" placeholder="e.g. juandc">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="account-email">Email *</label>
+                        <input type="email" id="account-email" required placeholder="e.g. juan@example.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="account-role">Account Role *</label>
+                        <select id="account-role" required>
+                            <option value="Administrator">Administrator</option>
+                            <option value="Cashier">Cashier</option>
+                            <option value="Warehouse Staff">Warehouse Staff</option>
+                            <option value="Super Admin">Super Admin</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="account-password">Password *</label>
+                        <input type="password" id="account-password" required minlength="8" autocomplete="new-password">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="account-password-confirmation">Confirm Password *</label>
+                        <input type="password" id="account-password-confirmation" required minlength="8" autocomplete="new-password">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary close-modal-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span>Create Account</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Product Modal (Add / Edit) -->
     <div id="product-modal" class="modal">
