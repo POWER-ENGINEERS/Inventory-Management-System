@@ -15,11 +15,15 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        User::updateOrCreate(
+            ['username' => env('SUPER_ADMIN_USERNAME', 'superadmin')],
+            [
+                'name' => env('SUPER_ADMIN_NAME', 'Super Admin'),
+                'email' => env('SUPER_ADMIN_EMAIL', 'superadmin@dabugss.com'),
+                'password' => env('SUPER_ADMIN_PASSWORD', 'change-this-password'),
+                'role' => 'Super Admin',
+                'status' => 'Active',
+            ]
+        );
     }
 }
