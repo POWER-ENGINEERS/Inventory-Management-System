@@ -2706,40 +2706,110 @@
         openModal("employee-modal");
     });
 
-    document.getElementById("employee-form").addEventListener("submit", function (e) {
+    document.getElementById("employee-form").addEventListener("submit", async function (e) {
         e.preventDefault();
+
+        const form = this;
+        clearFormErrors(form);
+
         const id = document.getElementById("employee-id").value;
         const name = document.getElementById("emp-name").value.trim();
         const position = document.getElementById("emp-position").value;
         const username = document.getElementById("emp-username").value.trim().toLowerCase();
         const password = document.getElementById("emp-password").value;
         const phone = document.getElementById("emp-phone").value.trim();
-        const email = document.getElementById("emp-email").value.trim();
+        const email = document.getElementById("emp-email").value.trim().toLowerCase();
 
+        if (!name || !position || !username || !email) {
+            showToast("Missing Information", "Please complete all required employee fields.", "warning");
+            return;
+        }
+
+        // Existing employees are still editable in the local employee directory.
+        // New employees are created as real Laravel authentication accounts first.
         if (id) {
             const emp = db.employees.find(e => e.id === id);
+
             if (emp) {
                 emp.name = name;
                 emp.position = position;
                 emp.username = username;
-                if (password) emp.password = password; // Only update password if they filled it in
+                if (password) emp.password = password;
                 emp.phone = phone;
                 emp.email = email;
+
+                saveDatabase();
+                closeModal("employee-modal");
+                renderEmployeesTable();
                 logAudit("Settings", `Modified credentials for employee: ${name}`);
+                showToast("Employee Updated", `${name}'s employee record was updated.`, "success");
             }
-        } else {
-            db.employees.push({
-                id: "emp-" + Date.now(),
-                name, position, username, password: password || "password", phone, email, status: "Active"
-            });
-            logAudit("Settings", `Registered employee user account: ${name} (${position})`);
+
+            return;
         }
 
-        saveDatabase();
-        closeModal("employee-modal");
-        renderEmployeesTable();
-    });
+        if (!password || password.length < 8) {
+            showToast("Invalid Password", "A new employee password must be at least 8 characters.", "warning");
+            return;
+        }
 
+        const payload = {
+            name,
+            username,
+            email,
+            password,
+            password_confirmation: password,
+            role: position
+        };
+
+        setFormBusy(form, true);
+
+        try {
+            // Create the actual login account in Laravel first.
+            await apiRequest("/auth/users", {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+
+            // Only add the employee to the local directory after Laravel
+            // successfully creates the authentication account.
+            db.employees.push({
+                id: "emp-" + Date.now(),
+                name,
+                position,
+                username,
+                password,
+                phone,
+                email,
+                status: "Active"
+            });
+
+            saveDatabase();
+            closeModal("employee-modal");
+            renderEmployeesTable();
+
+            if (typeof loadUserAccounts === "function") {
+                await loadUserAccounts();
+            }
+
+            logAudit("Settings", `Registered employee user account: ${name} (${position})`);
+            showToast("Employee Created", `${name} can now log in using the Laravel account.`, "success");
+        } catch (error) {
+            console.error("Laravel employee account creation failed:", error);
+
+            if (error.errors) {
+                showFormErrors(form, error.errors);
+            }
+
+            showToast(
+                "Employee Creation Failed",
+                error.message || "Unable to create the Laravel login account.",
+                "danger"
+            );
+        } finally {
+            setFormBusy(form, false);
+        }
+    });
     function renderEmployeesTable() {
         const tbody = document.getElementById("employees-table-body");
         tbody.innerHTML = "";
