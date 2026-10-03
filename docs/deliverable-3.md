@@ -95,3 +95,44 @@ The test run covered the existing unit and feature suites, including Inventory A
 **Evidence:** Local PowerShell test-run screenshots were captured on October 3, 2026.
 
 This confirms the automated-test portion of Deliverable 3. Manual browser verification remains separate and should only be marked passed after the corresponding flows are actually executed.
+
+
+## Manual Browser Verification Evidence
+
+On October 3, 2026, the application was run locally with Laravel at `http://127.0.0.1:8000`. Browser screenshots were submitted as manual QA evidence.
+
+### Verified from the submitted screenshots
+
+| Manual check | Result | Evidence observed |
+|---|---|---|
+| Login / authenticated session | PASS | Login screen was shown and the Dashboard displayed a successful "Signed In" notification. |
+| Dashboard rendering | PASS | Dashboard cards, charts, and inventory summary rendered with data. |
+| Categories & Brands page | PASS | Category and brand tables rendered with existing records and action controls. |
+| Products page | PASS | Product table rendered with product details, category/brand, pricing, stock, status, and action controls. |
+| Suppliers page | PASS | Supplier table rendered with existing supplier records and action controls. |
+| Purchase Orders page | PASS | Purchase order table rendered with order numbers, supplier, dates, items, cost, status, and actions. |
+| Receiving / Deliveries page | PASS | Purchase orders available for receiving were rendered. |
+| Inventory Movements page | PASS | Inventory movement records rendered with type, quantity, source/destination, and user. |
+| Sales Terminal / POS | PASS | Product cards and shopping-cart interface rendered. |
+| Customers page | PASS | Customer records rendered with contact and history information. |
+| Employees page | PASS | Employee records rendered with role, username, email, phone, status, and actions. |
+| Reports & Financials | PASS | Sales report and transaction information rendered. |
+| Audit Trail | PASS | Audit records rendered with timestamp, user, role, category, activity, and IP address. |
+| Settings | PASS | Company information, receipt customization, and database action controls rendered. |
+| Cashier POS session | PASS | Cashier account session and POS interface were shown successfully. |
+
+### Scope of this evidence
+
+These screenshots verify that the listed application views rendered successfully with their expected data and controls during the manual browser pass.
+
+They do **not** by themselves prove every Create, Update, Delete, 422, 404, 500, or network-failure scenario. Those scenarios should only be recorded as PASS when the specific action and result have been directly observed.
+
+### Existing automated evidence
+
+The automated suite was also executed locally:
+
+- 46 tests passed
+- 150 assertions
+- 1.57 seconds
+
+Together, the automated test result and the submitted browser screenshots provide the current Deliverable 3 verification evidence.
