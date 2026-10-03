@@ -10,7 +10,10 @@ File: `tests/Feature/Week7BindingTest.php`
 - [ ] Frontend-shaped Product Update persists to Laravel
 - [ ] Frontend-shaped Supplier Create persists to Laravel
 - [ ] Frontend-shaped Supplier Update persists to Laravel
+- [ ] Frontend-shaped Category Create persists to Laravel
+- [ ] Frontend-shaped Category Update persists to Laravel
 - [ ] Invalid Product data returns HTTP 422 validation errors
+- [ ] Invalid Supplier data returns HTTP 422 validation errors
 
 ## Manual browser tests
 
@@ -50,4 +53,16 @@ File: `tests/Feature/Week7BindingTest.php`
 - [ ] Confirm the Save button becomes usable again
 
 ## Result
-**Not yet manually verified.**
+Result: Manually verified successfully.
+
+The Week 7 frontend-to-Laravel form bindings were manually tested in the browser, including:
+- Product Create
+- Product Update
+- Supplier Create
+- Supplier Update
+- Category Create
+- Category Update
+- Validation handling
+- API/network behavior
+
+The tested records were confirmed to persist through the Laravel backend.
