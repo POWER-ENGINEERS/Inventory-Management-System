@@ -6,7 +6,8 @@ use App\Models\Supplier;
 uses(RefreshDatabase::class);
 
 test('suppliers endpoint returns successful response', function () {
-    $response = $this->getJson('/api/suppliers');
+    $response = $this->withToken(authToken())
+        ->getJson('/api/suppliers');
 
     $response->assertStatus(200)
         ->assertJson([
@@ -24,9 +25,10 @@ test('supplier details can be retrieved successfully', function () {
         'contact_number' => '09123456789',
     ]);
 
-    $response = $this->getJson(
-        '/api/suppliers/' . $supplier->supplier_id
-    );
+    $response = $this->withToken(authToken())
+        ->getJson(
+            '/api/suppliers/' . $supplier->supplier_id
+        );
 
     $response->assertStatus(200)
         ->assertJson([
@@ -40,10 +42,11 @@ test('supplier details can be retrieved successfully', function () {
 });
 
 test('supplier can be created successfully', function () {
-    $response = $this->postJson('/api/suppliers', [
-        'supplier_name' => 'New Supplier',
-        'contact_number' => '09123456789',
-    ]);
+    $response = $this->withToken(authToken())
+        ->postJson('/api/suppliers', [
+            'supplier_name' => 'New Supplier',
+            'contact_number' => '09123456789',
+        ]);
 
     $response->assertStatus(201)
         ->assertJson([
@@ -66,13 +69,14 @@ test('supplier can be updated successfully', function () {
         'contact_number' => '09111111111',
     ]);
 
-    $response = $this->putJson(
-        '/api/suppliers/' . $supplier->supplier_id,
-        [
-            'supplier_name' => 'Updated Supplier',
-            'contact_number' => '09222222222',
-        ]
-    );
+    $response = $this->withToken(authToken())
+        ->putJson(
+            '/api/suppliers/' . $supplier->supplier_id,
+            [
+                'supplier_name' => 'Updated Supplier',
+                'contact_number' => '09222222222',
+            ]
+        );
 
     $response->assertStatus(200)
         ->assertJson([
@@ -96,9 +100,10 @@ test('supplier can be deleted successfully', function () {
         'contact_number' => '09888888888',
     ]);
 
-    $response = $this->deleteJson(
-        '/api/suppliers/' . $supplier->supplier_id
-    );
+    $response = $this->withToken(authToken())
+        ->deleteJson(
+            '/api/suppliers/' . $supplier->supplier_id
+        );
 
     $response->assertStatus(200)
         ->assertJson([
@@ -114,9 +119,10 @@ test('supplier can be deleted successfully', function () {
 });
 
 test('supplier creation fails when supplier name is missing', function () {
-    $response = $this->postJson('/api/suppliers', [
-        'contact_number' => '09123456789',
-    ]);
+    $response = $this->withToken(authToken())
+        ->postJson('/api/suppliers', [
+            'contact_number' => '09123456789',
+        ]);
 
     $response->assertStatus(422)
         ->assertJsonValidationErrors([
@@ -125,9 +131,10 @@ test('supplier creation fails when supplier name is missing', function () {
 });
 
 test('updating nonexistent supplier returns 404', function () {
-    $response = $this->putJson('/api/suppliers/99999', [
-        'supplier_name' => 'Updated Supplier',
-    ]);
+    $response = $this->withToken(authToken())
+        ->putJson('/api/suppliers/99999', [
+            'supplier_name' => 'Updated Supplier',
+        ]);
 
     $response->assertStatus(404)
         ->assertJson([
@@ -137,7 +144,8 @@ test('updating nonexistent supplier returns 404', function () {
 });
 
 test('deleting nonexistent supplier returns 404', function () {
-    $response = $this->deleteJson('/api/suppliers/99999');
+    $response = $this->withToken(authToken())
+        ->deleteJson('/api/suppliers/99999');
 
     $response->assertStatus(404)
         ->assertJson([

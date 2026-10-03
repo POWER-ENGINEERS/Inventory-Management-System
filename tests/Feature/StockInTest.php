@@ -9,7 +9,8 @@ use App\Models\InventoryTransaction;
 uses(RefreshDatabase::class);
 
 test('stock-ins endpoint returns successful response', function () {
-    $response = $this->getJson('/api/stock-ins');
+    $response = $this->withToken(authToken())
+        ->getJson('/api/stock-ins');
 
     $response->assertStatus(200);
 });
@@ -39,9 +40,8 @@ test('stock-in details can be retrieved successfully', function () {
         'transaction_date' => now(),
     ]);
 
-    $response = $this->getJson(
-        '/api/stock-ins/' . $stockIn->transaction_id
-    );
+    $response = $this->withToken(authToken())
+        ->getJson('/api/stock-ins/' . $stockIn->transaction_id);
 
     $response->assertStatus(200)
         ->assertJson([
@@ -72,10 +72,11 @@ test('stock in can be created successfully', function () {
         'price' => 25000,
     ]);
 
-    $response = $this->postJson('/api/stock-ins', [
-        'product_id' => $product->product_id,
-        'quantity' => 5,
-    ]);
+    $response = $this->withToken(authToken())
+        ->postJson('/api/stock-ins', [
+            'product_id' => $product->product_id,
+            'quantity' => 5,
+        ]);
 
     $response->assertStatus(201)
         ->assertJson([
@@ -127,13 +128,11 @@ test('stock in can be updated successfully', function () {
         'transaction_date' => now(),
     ]);
 
-    $response = $this->putJson(
-        '/api/stock-ins/' . $stockIn->transaction_id,
-        [
+    $response = $this->withToken(authToken())
+        ->putJson('/api/stock-ins/' . $stockIn->transaction_id, [
             'product_id' => $product->product_id,
             'quantity' => 10,
-        ]
-    );
+        ]);
 
     $response->assertStatus(200)
         ->assertJson([
@@ -184,15 +183,16 @@ test('stock in can be deleted successfully', function () {
         'transaction_date' => now(),
     ]);
 
-    $response = $this->deleteJson(
-        '/api/stock-ins/' . $stockIn->transaction_id
-    );
+    $response = $this->withToken(authToken())
+        ->deleteJson('/api/stock-ins/' . $stockIn->transaction_id);
 
-    $response->assertStatus(200)
-        ->assertJson([
-            'status' => 'success',
+   $response->assertStatus(200)
+    ->assertJson([
+        'status' => 'success',
+        'data' => [
             'message' => 'Stock-in deleted successfully',
-        ]);
+        ],
+    ]);
 
     $this->assertDatabaseMissing('inventory_transactions', [
         'transaction_id' => $stockIn->transaction_id,
@@ -205,7 +205,8 @@ test('stock in can be deleted successfully', function () {
 });
 
 test('stock in fails when required fields are missing', function () {
-    $response = $this->postJson('/api/stock-ins', []);
+    $response = $this->withToken(authToken())
+        ->postJson('/api/stock-ins', []);
 
     $response->assertStatus(422)
         ->assertJsonValidationErrors([
@@ -215,10 +216,11 @@ test('stock in fails when required fields are missing', function () {
 });
 
 test('stock in fails when product does not exist', function () {
-    $response = $this->postJson('/api/stock-ins', [
-        'product_id' => 99999,
-        'quantity' => 5,
-    ]);
+    $response = $this->withToken(authToken())
+        ->postJson('/api/stock-ins', [
+            'product_id' => 99999,
+            'quantity' => 5,
+        ]);
 
     $response->assertStatus(422)
         ->assertJsonValidationErrors([
@@ -244,10 +246,11 @@ test('stock in fails when quantity is zero', function () {
         'price' => 25000,
     ]);
 
-    $response = $this->postJson('/api/stock-ins', [
-        'product_id' => $product->product_id,
-        'quantity' => 0,
-    ]);
+    $response = $this->withToken(authToken())
+        ->postJson('/api/stock-ins', [
+            'product_id' => $product->product_id,
+            'quantity' => 0,
+        ]);
 
     $response->assertStatus(422)
         ->assertJsonValidationErrors([
