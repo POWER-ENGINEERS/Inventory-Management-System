@@ -74,3 +74,24 @@ Do not mark a manual test as passed unless it has actually been executed and obs
 Individual evidence should be supported by Git history and board ownership. For Eric Gabriel Penkian Diola, relevant repository history includes Week 6 reusable-view/state commits and merged Week 6 pull requests under the `ericgabrieldiola` account.
 
 The Deliverable 3 requirement is that assigned screens/components and bindings are verifiable through commits and contribution records.
+
+## Automated Test Verification
+
+The Laravel automated test suite was executed locally with:
+
+```powershell
+php artisan test
+```
+
+**Result recorded from the local test run:**
+
+- **46 tests passed**
+- **150 assertions**
+- **Duration: 1.57 seconds**
+- No failed tests were shown in the submitted test-run evidence.
+
+The test run covered the existing unit and feature suites, including Inventory API, Laravel authentication, Products, Stock In, Stock Out, Suppliers, and Week 7 frontend-shaped binding tests.
+
+**Evidence:** Local PowerShell test-run screenshots were captured on October 3, 2026.
+
+This confirms the automated-test portion of Deliverable 3. Manual browser verification remains separate and should only be marked passed after the corresponding flows are actually executed.
