@@ -1,0 +1,1577 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Da Bugss | Premium Inventory & POS Management System</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom Style -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Login Page View -->
+    <div id="login-container" class="login-wrapper">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="logo">
+                    <img src="images/the_bugss.png"
+                         alt="Da Bugss"
+                         class="logo-image">
+                    <span>Da Bugss</span>
+                </div>
+                <h2>Welcome Back</h2>
+                <p>Please select your account type and enter credentials to sign in.</p>
+            </div>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-role-select"><i class="fa-solid fa-users-gear"></i> Account Type</label>
+                    <select id="login-role-select" required>
+                        <option value="Super Admin">Super Admin</option>
+                        <option value="Administrator">Administrator</option>
+                        <option value="Cashier">Cashier</option>
+                        <option value="Warehouse Staff">Warehouse Staff</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="login-username"><i class="fa-solid fa-user"></i> Username or Email</label>
+                    <input type="text" id="login-username" placeholder="e.g. superadmin" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="login-password"><i class="fa-solid fa-lock"></i> Password</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password">
+                        <button type="button" id="toggle-login-password" class="password-toggle-btn">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="login-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="remember-me">
+                        <span class="custom-checkbox"></span>
+                        Remember Me
+                    </label>
+                    <a href="#" id="forgot-password-link" class="forgot-pwd">Forgot Password?</a>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                    <span>Sign In</span>
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2FA Modal Dialog -->
+    <div id="mfa-modal" class="modal">
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h3>Two-Factor Verification</h3>
+                <button class="close-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body text-center">
+                <p>Enter the 6-digit code sent to your authenticator app / email.</p>
+                <div class="mfa-code-input-container">
+                    <input type="text" maxlength="6" id="mfa-code" placeholder="123456" class="mfa-input">
+                </div>
+                <div class="mfa-hint">Demo code is <strong id="mfa-demo-code">123456</strong></div>
+                <button id="submit-mfa-btn" class="btn btn-primary btn-block mt-3">Verify Code</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgot-password-modal" class="modal">
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h3>Reset Password</h3>
+                <button class="close-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">Enter your email and we'll send you instructions to reset your password.</p>
+                <div class="form-group">
+                    <label for="reset-email">Email Address</label>
+                    <input type="email" id="reset-email" placeholder="e.g. admin@dabugss.com" required>
+                </div>
+                <button id="send-reset-btn" class="btn btn-primary btn-block mt-3">Send Reset Code</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main System Layout Wrapper (Dashboard Shell) -->
+    <div id="app-container" class="dashboard-shell hidden">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <img src="images/the_bugss.png"
+                         alt="Da Bugss"
+                         class="logo-image">
+                    <span>Da Bugss</span>
+                </div>
+                <button id="collapse-sidebar-btn" class="collapse-btn">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+            </div>
+
+            <div class="user-profile-badge">
+                <div class="profile-avatar">
+                    <span id="user-initials">SA</span>
+                </div>
+                <div class="profile-info">
+                    <h4 id="user-display-name">Super Admin</h4>
+                    <span id="user-role-label">Super Admin</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <ul>
+                    <li data-view="dashboard" class="active">
+                        <a href="#"><i class="fa-solid fa-chart-line"></i><span>Dashboard</span></a>
+                    </li>
+                    <li data-view="products" data-perm="manage_products">
+                        <a href="#"><i class="fa-solid fa-box-archive"></i><span>Products</span></a>
+                    </li>
+                    <li data-view="categories" data-perm="manage_products">
+                        <a href="#"><i class="fa-solid fa-tags"></i><span>Categories & Brands</span></a>
+                    </li>
+                    <li data-view="suppliers" data-perm="manage_suppliers">
+                        <a href="#"><i class="fa-solid fa-truck-field"></i><span>Suppliers</span></a>
+                    </li>
+                    <li data-view="purchase-orders" data-perm="manage_inventory">
+                        <a href="#"><i class="fa-solid fa-file-invoice-dollar"></i><span>Purchase Orders</span></a>
+                    </li>
+                    <li data-view="receiving" data-perm="receive_deliveries">
+                        <a href="#"><i class="fa-solid fa-truck-loading"></i><span>Receiving (Deliveries)</span></a>
+                    </li>
+                    <li data-view="inventory" data-perm="manage_inventory">
+                        <a href="#"><i class="fa-solid fa-dolly"></i><span>Inventory Movements</span></a>
+                    </li>
+                    <li data-view="sales" data-perm="process_sales">
+                        <a href="#"><i class="fa-solid fa-cash-register"></i><span>Sales Terminal (POS)</span></a>
+                    </li>
+                    <li data-view="customers">
+                        <a href="#"><i class="fa-solid fa-people-group"></i><span>Customers</span></a>
+                    </li>
+                    <li data-view="employees" data-perm="manage_employees">
+                        <a href="#"><i class="fa-solid fa-users-gear"></i><span>Employees</span></a>
+                    </li>
+                    <li data-view="reports" data-perm="generate_reports">
+                        <a href="#"><i class="fa-solid fa-chart-pie"></i><span>Reports & Financials</span></a>
+                    </li>
+                    <li data-view="audit-trail" data-perm="view_audit_trail">
+                        <a href="#"><i class="fa-solid fa-clock-rotate-left"></i><span>Audit Trail</span></a>
+                    </li>
+                    <li data-view="settings" data-perm="configure_settings">
+                        <a href="#"><i class="fa-solid fa-sliders"></i><span>Settings</span></a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button id="logout-btn" class="btn-logout">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Sign Out</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Body Wrapper -->
+        <div class="main-body">
+            <!-- Top App Bar / Header -->
+            <header class="app-header">
+                <div class="header-left">
+                    <button id="mobile-nav-toggle" class="mobile-toggle"><i class="fa-solid fa-bars"></i></button>
+                    <h2 id="current-view-title">Dashboard</h2>
+                </div>
+                <div class="header-right">
+                    <!-- Theme Toggle -->
+                    <button id="theme-toggle" class="header-btn" title="Toggle Theme">
+                        <i class="fa-solid fa-sun icon-light"></i>
+                        <i class="fa-solid fa-moon icon-dark"></i>
+                    </button>
+
+                    <!-- Notifications Dropdown -->
+                    <div class="notification-dropdown-wrapper">
+                        <button id="notifications-btn" class="header-btn relative" title="Notifications">
+                            <i class="fa-solid fa-bell"></i>
+                            <span id="notif-badge" class="badge badge-danger hidden">0</span>
+                        </button>
+                        <div id="notifications-panel" class="notifications-panel hidden">
+                            <div class="notif-header">
+                                <h3>System Notifications</h3>
+                                <button id="mark-all-read-btn">Mark all read</button>
+                            </div>
+                            <div id="notif-list" class="notif-list">
+                                <div class="notif-empty">No new notifications</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Scanner Icon -->
+                    <button id="quick-scan-toggle" class="header-btn text-primary" title="Quick Barcode Scanner">
+                        <i class="fa-solid fa-barcode"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Main Content Containers -->
+            <main class="content-container">
+
+                <!-- 1. DASHBOARD VIEW -->
+                <section id="view-dashboard" class="content-view active">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Total Products</span>
+                                <i class="fa-solid fa-box text-blue"></i>
+                            </div>
+                            <div class="stat-value" id="dash-total-products">0</div>
+                            <div class="stat-meta">Active catalog products</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Total Categories</span>
+                                <i class="fa-solid fa-tags text-teal"></i>
+                            </div>
+                            <div class="stat-value" id="dash-total-categories">0</div>
+                            <div class="stat-meta">Product categories</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Total Suppliers</span>
+                                <i class="fa-solid fa-truck text-purple"></i>
+                            </div>
+                            <div class="stat-value" id="dash-total-suppliers">0</div>
+                            <div class="stat-meta">Active partners</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Today's Sales</span>
+                                <i class="fa-solid fa-hand-holding-dollar text-green"></i>
+                            </div>
+                            <div class="stat-value" id="dash-sales-today">₱0.00</div>
+                            <div class="stat-meta" id="dash-sales-count-today">0 Transactions</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Month's Sales</span>
+                                <i class="fa-solid fa-calendar-days text-orange"></i>
+                            </div>
+                            <div class="stat-value" id="dash-sales-month">₱0.00</div>
+                            <div class="stat-meta">Current billing cycle</div>
+                        </div>
+                        <div class="stat-card border-warning">
+                            <div class="stat-header">
+                                <span class="stat-label">Low / Critical Stock</span>
+                                <i class="fa-solid fa-triangle-exclamation text-warning"></i>
+                            </div>
+                            <div class="stat-value text-warning" id="dash-low-stock">0</div>
+                            <div class="stat-meta">Requires attention</div>
+                        </div>
+                        <div class="stat-card border-danger">
+                            <div class="stat-header">
+                                <span class="stat-label">Out of Stock</span>
+                                <i class="fa-solid fa-circle-xmark text-danger"></i>
+                            </div>
+                            <div class="stat-value text-danger" id="dash-out-of-stock">0</div>
+                            <div class="stat-meta">Immediate restock needed</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Pending POs</span>
+                                <i class="fa-solid fa-clock text-blue"></i>
+                            </div>
+                            <div class="stat-value" id="dash-pending-pos">0</div>
+                            <div class="stat-meta">Awaiting approval/delivery</div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Section -->
+                    <div class="dashboard-charts-grid">
+                        <div class="chart-card">
+                            <h3>Monthly Sales Performance</h3>
+                            <div class="chart-wrapper">
+                                <canvas id="monthlySalesChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Inventory Breakdown by Category</h3>
+                            <div class="chart-wrapper">
+                                <canvas id="inventoryCategoryChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Transactions & Alert Grid -->
+                    <div class="dashboard-details-grid">
+                        <div class="details-card card-large">
+                            <div class="card-header-actions">
+                                <h3>Recent Transactions</h3>
+                                <button class="btn btn-text btn-sm" onclick="app.switchView('sales')">View All Sales</button>
+                            </div>
+                            <div class="table-responsive">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Receipt No</th>
+                                            <th>Date/Time</th>
+                                            <th>Cashier</th>
+                                            <th>Payment Method</th>
+                                            <th>Items</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dash-recent-transactions">
+                                        <!-- Dynamic rows -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="details-card">
+                            <h3>Critical Notifications</h3>
+                            <div class="critical-notifs-list" id="dash-critical-notifs">
+                                <!-- Dynamic notifications -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. PRODUCTS VIEW -->
+                <section id="view-products" class="content-view">
+                    <div class="view-header-bar">
+                        <div class="search-filter-group">
+                            <div class="search-input-wrapper">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" id="products-search" placeholder="Search by name, SKU, barcode, brand, supplier...">
+                            </div>
+                            <select id="products-filter-category">
+                                <option value="">All Categories</option>
+                            </select>
+                            <select id="products-filter-stock">
+                                <option value="">All Stock Levels</option>
+                                <option value="instock">In Stock</option>
+                                <option value="low">Low Stock</option>
+                                <option value="critical">Critical Stock</option>
+                                <option value="outofstock">Out of Stock</option>
+                            </select>
+                            <select id="products-filter-status">
+                                <option value="active">Active Products</option>
+                                <option value="archived">Archived Products</option>
+                            </select>
+                        </div>
+                        <button id="add-product-btn" class="btn btn-primary">
+                            <i class="fa-solid fa-plus"></i> Add Product
+                        </button>
+                    </div>
+
+                    <div class="table-card table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Image</th>
+                                    <th>Product Details</th>
+                                    <th>SKU / Barcode</th>
+                                    <th>Category & Brand</th>
+                                    <th>Prices</th>
+                                    <th>Stock Level</th>
+                                    <th>Exp. Date</th>
+                                    <th>Status</th>
+                                    <th class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="products-table-body">
+                                <!-- Dynamic -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 3. CATEGORIES & BRANDS VIEW -->
+                <section id="view-categories" class="content-view">
+                    <div class="two-column-layout">
+                        <!-- Categories Column -->
+                        <div class="details-card">
+                            <div class="card-header-actions mb-4">
+                                <h3>Product Categories</h3>
+                                <button id="add-category-btn" class="btn btn-primary btn-sm">
+                                    <i class="fa-solid fa-plus"></i> Add Category
+                                </button>
+                            </div>
+                            <div class="table-responsive">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Category Name</th>
+                                            <th>Description</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="categories-table-body">
+                                        <!-- Dynamic -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Brands Column -->
+                        <div class="details-card">
+                            <div class="card-header-actions mb-4">
+                                <h3>Product Brands</h3>
+                                <button id="add-brand-btn" class="btn btn-primary btn-sm">
+                                    <i class="fa-solid fa-plus"></i> Add Brand
+                                </button>
+                            </div>
+                            <div class="table-responsive">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Brand Name</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="brands-table-body">
+                                        <!-- Dynamic -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. SUPPLIERS VIEW -->
+                <section id="view-suppliers" class="content-view">
+                    <div class="view-header-bar">
+                        <div class="search-input-wrapper flex-grow">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="suppliers-search" placeholder="Search suppliers by company, contact person, email...">
+                        </div>
+                        <button id="add-supplier-btn" class="btn btn-primary">
+                            <i class="fa-solid fa-plus"></i> Add Supplier
+                        </button>
+                    </div>
+
+                    <div class="table-card table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Company Name</th>
+                                    <th>Contact Person</th>
+                                    <th>Contact Info</th>
+                                    <th>Address</th>
+                                    <th>Purchase History Count</th>
+                                    <th class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="suppliers-table-body">
+                                <!-- Dynamic -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 5. PURCHASE ORDERS VIEW -->
+                <section id="view-purchase-orders" class="content-view">
+                    <div class="view-header-bar">
+                        <div class="search-filter-group">
+                            <div class="search-input-wrapper">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" id="po-search" placeholder="Search PO number or supplier...">
+                            </div>
+                            <select id="po-filter-status">
+                                <option value="">All Statuses</option>
+                                <option value="Pending">Pending Approval</option>
+                                <option value="Approved">Approved</option>
+                                <option value="Ordered">Ordered</option>
+                                <option value="Received">Received</option>
+                                <option value="Cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                        <button id="create-po-btn" class="btn btn-primary">
+                            <i class="fa-solid fa-cart-plus"></i> Create Purchase Order
+                        </button>
+                    </div>
+
+                    <div class="table-card table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>PO Number</th>
+                                    <th>Supplier</th>
+                                    <th>Order Date</th>
+                                    <th>Expected Delivery</th>
+                                    <th>Items Ordered</th>
+                                    <th>Total Cost</th>
+                                    <th>Status</th>
+                                    <th class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="po-table-body">
+                                <!-- Dynamic -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 6. RECEIVING VIEW -->
+                <section id="view-receiving" class="content-view">
+                    <div class="two-column-layout">
+                        <!-- Open Deliveries -->
+                        <div class="details-card card-large">
+                            <h3>Select Approved/Ordered Purchase Order to Receive</h3>
+                            <p class="mb-4 text-meta">Only POs in 'Approved' or 'Ordered' status can be received.</p>
+                            <div class="table-responsive">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>PO Number</th>
+                                            <th>Supplier</th>
+                                            <th>Items</th>
+                                            <th>Total Cost</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="receiving-pos-table-body">
+                                        <!-- Dynamic -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Scan / Fast Receive Card -->
+                        <div class="details-card">
+                            <h3>Verify & Record Delivery</h3>
+                            <div class="receiving-wizard-wrapper text-center py-5" id="receiving-placeholder">
+                                <i class="fa-solid fa-truck-ramp-box icon-xxl mb-3 text-muted"></i>
+                                <p>Select a Purchase Order on the left to start checking items and verifying quantities.</p>
+                            </div>
+                            
+                            <div class="receiving-active-form hidden" id="receiving-active-form">
+                                <div class="po-receiving-header">
+                                    <h4 id="receiving-po-title">PO #10001</h4>
+                                    <span class="badge badge-info" id="receiving-po-supplier">Supplier Corp</span>
+                                </div>
+                                <hr class="my-3">
+                                
+                                <div class="barcode-scan-sim-box mb-3">
+                                    <label><i class="fa-solid fa-barcode"></i> Simulate Product Scan</label>
+                                    <div class="input-group">
+                                        <input type="text" id="receiving-barcode-scan" placeholder="Scan or type barcode...">
+                                        <button class="btn btn-primary" id="receiving-barcode-scan-btn">Scan</button>
+                                    </div>
+                                </div>
+
+                                <div class="table-responsive select-qty-table max-h-300">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Product</th>
+                                                <th>Ordered</th>
+                                                <th>Received</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="receiving-items-body">
+                                            <!-- Dynamic items -->
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="form-group mt-3">
+                                    <label for="receiving-delivery-date">Actual Delivery Date</label>
+                                    <input type="date" id="receiving-delivery-date">
+                                </div>
+
+                                <div class="flex-actions justify-end mt-4">
+                                    <button class="btn btn-secondary mr-2" id="cancel-receiving-btn">Cancel</button>
+                                    <button class="btn btn-success" id="save-receiving-btn">Record & Update Stock</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 7. INVENTORY VIEW -->
+                <section id="view-inventory" class="content-view">
+                    <div class="view-header-bar">
+                        <div class="search-filter-group">
+                            <div class="search-input-wrapper">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" id="inventory-search" placeholder="Search product movements...">
+                            </div>
+                            <select id="inventory-filter-type">
+                                <option value="">All Movement Types</option>
+                                <option value="Stock In">Stock In</option>
+                                <option value="Stock Out">Stock Out</option>
+                                <option value="Adjustment">Stock Adjustment</option>
+                                <option value="Transfer">Stock Transfer</option>
+                                <option value="Damaged">Damaged Products</option>
+                                <option value="Expired">Expired Products</option>
+                            </select>
+                        </div>
+                        <div class="flex-actions">
+                            <button id="inventory-adjust-btn" class="btn btn-secondary">
+                                <i class="fa-solid fa-sliders"></i> Stock Adjustment
+                            </button>
+                            <button id="inventory-transfer-btn" class="btn btn-primary ml-2">
+                                <i class="fa-solid fa-shuffle"></i> Stock Transfer
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Expiration Alert Cards in Inventory page -->
+                    <div class="expiration-alerts-strip hidden" id="inventory-expiration-strip">
+                        <div class="alert alert-warning d-flex align-center justify-between">
+                            <div>
+                                <i class="fa-solid fa-clock-rotate-left mr-2"></i>
+                                <strong id="expired-count-alert">0</strong> products are expired, and <strong id="nearexp-count-alert">0</strong> are near expiration!
+                            </div>
+                            <button class="btn btn-sm btn-warning" onclick="app.switchView('reports')">View Expiry Report</button>
+                        </div>
+                    </div>
+
+                    <div class="table-card table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date/Time</th>
+                                    <th>Product</th>
+                                    <th>Type</th>
+                                    <th>Quantity</th>
+                                    <th>Source & Destination</th>
+                                    <th>Reason / Reference</th>
+                                    <th>Logged By</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventory-table-body">
+                                <!-- Dynamic -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 8. SALES VIEW (POS) -->
+                <section id="view-sales" class="content-view">
+                    <div class="pos-layout">
+                        <!-- Left Catalog & Search Column -->
+                        <div class="pos-catalog-panel">
+                            <div class="pos-search-header">
+                                <div class="search-input-wrapper">
+                                    <i class="fa-solid fa-magnifying-glass"></i>
+                                    <input type="text" id="pos-search-input" placeholder="Search by name, SKU, brand...">
+                                </div>
+                                <select id="pos-category-filter">
+                                    <option value="">All Categories</option>
+                                </select>
+                            </div>
+                            
+                            <div class="pos-grid" id="pos-products-grid">
+                                <!-- Grid items populated dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Right Cart & Action Column -->
+                        <div class="pos-cart-panel">
+                            <div class="cart-header">
+                                <h3>Shopping Cart</h3>
+                                <button class="btn btn-text text-danger btn-sm" id="pos-clear-cart-btn"><i class="fa-solid fa-trash-can"></i> Clear Cart</button>
+                            </div>
+                            
+                            <div class="pos-barcode-scanner-bar">
+                                <i class="fa-solid fa-barcode"></i>
+                                <input type="text" id="pos-barcode-input" placeholder="Scan product barcode...">
+                                <button class="btn btn-primary btn-sm" id="pos-scan-btn">Scan</button>
+                            </div>
+
+                            <div class="pos-customer-selection">
+                                <i class="fa-solid fa-user-tag text-teal"></i>
+                                <select id="pos-customer-select">
+                                    <option value="walkin">Walk-in Customer</option>
+                                </select>
+                            </div>
+
+                            <div class="cart-items-wrapper">
+                                <div class="cart-items-list" id="pos-cart-list">
+                                    <div class="cart-empty">
+                                        <i class="fa-solid fa-basket-shopping"></i>
+                                        <p>Cart is empty. Scan barcodes or click on products to add items.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="cart-summary-box">
+                                <div class="summary-row">
+                                    <span>Subtotal</span>
+                                    <span id="pos-subtotal">$0.00</span>
+                                </div>
+                                <div class="summary-row">
+                                    <span>Discount</span>
+                                    <div class="discount-input-wrapper">
+                                        <input type="number" id="pos-discount" min="0" max="100" value="0">%
+                                    </div>
+                                </div>
+                                <div class="summary-row">
+                                    <span>VAT / Tax (<span id="pos-vat-rate">12</span>%)</span>
+                                    <span id="pos-tax-amount">$0.00</span>
+                                </div>
+                                <hr>
+                                <div class="summary-row total-row">
+                                    <span>Total Amount</span>
+                                    <span id="pos-total-amount">$0.00</span>
+                                </div>
+                            </div>
+
+                            <div class="pos-payment-actions">
+                                <button class="btn btn-success btn-block py-3" id="pos-pay-btn" disabled>
+                                    <i class="fa-solid fa-cash-register"></i> Process Payment
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 9. CUSTOMERS VIEW -->
+                <section id="view-customers" class="content-view">
+                    <div class="view-header-bar">
+                        <div class="search-input-wrapper flex-grow">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="customers-search" placeholder="Search customers by name, phone, email...">
+                        </div>
+                        <button id="add-customer-btn" class="btn btn-primary">
+                            <i class="fa-solid fa-plus"></i> Add Customer
+                        </button>
+                    </div>
+
+                    <div class="table-card table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Customer Name</th>
+                                    <th>Phone Number</th>
+                                    <th>Email</th>
+                                    <th>Address</th>
+                                    <th>Loyalty Points</th>
+                                    <th>Spend History Count</th>
+                                    <th class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customers-table-body">
+                                <!-- Dynamic -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 10. EMPLOYEES VIEW -->
+                <section id="view-employees" class="content-view">
+                    <div class="view-header-bar">
+                        <div class="search-input-wrapper flex-grow">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="employees-search" placeholder="Search employees by name, role, email...">
+                        </div>
+                        <button id="add-employee-btn" class="btn btn-primary">
+                            <i class="fa-solid fa-user-plus"></i> Add Employee
+                        </button>
+                    </div>
+
+                    <div class="table-card table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Employee Name</th>
+                                    <th>Position / Role</th>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Status</th>
+                                    <th class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employees-table-body">
+                                <!-- Dynamic -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 11. REPORTS VIEW -->
+                <section id="view-reports" class="content-view">
+                    <!-- Report type select tabs -->
+                    <div class="tab-strip">
+                        <button class="tab-btn active" data-report="sales">Sales & Revenue</button>
+                        <button class="tab-btn" data-report="inventory">Inventory & Expirations</button>
+                        <button class="tab-btn" data-report="purchases">Purchase & Delivery</button>
+                        <button class="tab-btn" data-report="financials">Financial Statements</button>
+                    </div>
+
+                    <div class="report-controls-bar">
+                        <div class="filter-row">
+                            <div class="form-group flex-row mb-0">
+                                <label class="mr-2">Date Range:</label>
+                                <input type="date" id="report-start-date">
+                                <span class="mx-2">to</span>
+                                <input type="date" id="report-end-date">
+                            </div>
+                            <button id="generate-report-btn" class="btn btn-primary ml-3">Generate Report</button>
+                        </div>
+                        <div class="export-actions">
+                            <button id="export-pdf-btn" class="btn btn-secondary btn-sm"><i class="fa-solid fa-file-pdf text-danger"></i> Export PDF</button>
+                            <button id="export-excel-btn" class="btn btn-secondary btn-sm ml-2"><i class="fa-solid fa-file-excel text-success"></i> Export Excel</button>
+                            <button id="export-csv-btn" class="btn btn-secondary btn-sm ml-2"><i class="fa-solid fa-file-csv text-teal"></i> Export CSV</button>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Report Content -->
+                    <div id="report-content-wrapper" class="report-output-card">
+                        <!-- Sales report output display as default -->
+                        <div class="report-header-preview">
+                            <h2 id="report-display-title">Sales & Revenue Report</h2>
+                            <p id="report-display-dates">Date Range: Real-time</p>
+                        </div>
+                        <hr class="my-4">
+                        <div id="report-dynamic-data">
+                            <!-- Populated based on selection -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 12. AUDIT TRAIL VIEW -->
+                <section id="view-audit-trail" class="content-view">
+                    <div class="view-header-bar">
+                        <div class="search-filter-group flex-grow">
+                            <div class="search-input-wrapper flex-grow">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" id="audit-search" placeholder="Search logs by activity description, user, IP...">
+                            </div>
+                            <select id="audit-filter-action">
+                                <option value="">All Activities</option>
+                                <option value="Login">Login Actions</option>
+                                <option value="Product">Product Changes</option>
+                                <option value="Inventory">Inventory Adjustments</option>
+                                <option value="Sales">Sales & Orders</option>
+                                <option value="Settings">Settings & System</option>
+                            </select>
+                        </div>
+                        <button id="clear-audit-logs-btn" class="btn btn-text text-danger" data-perm="configure_settings">
+                            <i class="fa-solid fa-trash"></i> Clear Logs
+                        </button>
+                    </div>
+
+                    <div class="table-card table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>User</th>
+                                    <th>Role</th>
+                                    <th>Category</th>
+                                    <th>Activity Description</th>
+                                    <th>IP Address</th>
+                                </tr>
+                            </thead>
+                            <tbody id="audit-table-body">
+                                <!-- Dynamic -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 13. SETTINGS VIEW -->
+                <section id="view-settings" class="content-view">
+                    <div class="two-column-layout">
+                        <!-- Company Settings Card -->
+                        <div class="details-card">
+                            <h3>Company Information</h3>
+                            <form id="settings-company-form" class="mt-4">
+                                <div class="form-group">
+                                    <label for="set-company-name">Store / Company Name</label>
+                                    <input type="text" id="set-company-name" value="Da Bugss Ltd." required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="set-company-email">Email Address</label>
+                                    <input type="email" id="set-company-email" value="contact@dabugss.com" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="set-company-phone">Phone Number</label>
+                                    <input type="text" id="set-company-phone" value="+1 (555) 123-4567" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="set-company-address">Physical Address</label>
+                                    <textarea id="set-company-address" rows="3" required>123 Innovation Drive, Tech District, Silicon Valley, CA</textarea>
+                                </div>
+                                <div class="two-column-layout gap-2 mt-2">
+                                    <div class="form-group">
+                                        <label for="set-currency">Currency Symbol</label>
+                                        <select id="set-currency">
+                                            <option value="$">USD ($)</option>
+                                            <option value="₱">PHP (₱)</option>
+                                            <option value="€">EUR (€)</option>
+                                            <option value="£">GBP (£)</option>
+                                            <option value="¥">JPY (¥)</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="set-tax-rate">VAT / Tax Rate (%)</label>
+                                        <input type="number" id="set-tax-rate" min="0" max="50" value="12" step="0.1">
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary mt-3">Save Company Settings</button>
+                            </form>
+                        </div>
+
+                        <!-- System Backup & Layout Settings -->
+                        <div class="details-card">
+                            <h3>Receipt Customization</h3>
+                            <div class="form-group mt-3">
+                                <label for="set-receipt-layout">Receipt Footer Message</label>
+                                <input type="text" id="set-receipt-layout" value="Thank you for shopping with us! Please come again.">
+                            </div>
+
+                            <hr class="my-4">
+                            
+                            <h3>System Database Actions</h3>
+                            <p class="text-meta mb-3">Backup all tables, sales transaction histories, audit logs, and settings to a local JSON file. You can restore this file at any time to recover this exact snapshot.</p>
+                            
+                            <div class="flex-actions justify-between mt-4">
+                                <button id="backup-db-btn" class="btn btn-secondary">
+                                    <i class="fa-solid fa-download"></i> Backup Database
+                                </button>
+                                
+                                <div class="upload-btn-wrapper">
+                                    <button class="btn btn-warning"><i class="fa-solid fa-upload"></i> Restore Database</button>
+                                    <input type="file" id="restore-db-upload" accept=".json" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+
+    <!-- WEEK 6: REUSABLE UI STATES -->
+
+<!-- Empty State -->
+<template id="empty-state-template">
+    <div class="ui-state ui-state-empty">
+        <div class="ui-state-icon">
+            <i class="fa-solid fa-folder-open"></i>
+        </div>
+        <h3 class="ui-state-title">No records found</h3>
+        <p class="ui-state-message">
+            There are no records to display.
+        </p>
+    </div>
+</template>
+
+<!-- Loading State -->
+<template id="loading-state-template">
+    <div class="ui-state ui-state-loading">
+        <div class="ui-state-icon">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+        </div>
+        <h3 class="ui-state-title">Loading...</h3>
+        <p class="ui-state-message">
+            Please wait while the data is being loaded.
+        </p>
+    </div>
+</template>
+
+<!-- Error State -->
+<template id="error-state-template">
+    <div class="ui-state ui-state-error">
+        <div class="ui-state-icon">
+            <i class="fa-solid fa-circle-exclamation"></i>
+        </div>
+        <h3 class="ui-state-title">Something went wrong</h3>
+        <p class="ui-state-message">
+            We could not load the requested information.
+        </p>
+        <button type="button" class="btn btn-primary ui-state-retry">
+            <i class="fa-solid fa-rotate-right"></i>
+            Try Again
+        </button>
+    </div>
+</template>
+
+<!-- END WEEK 6: REUSABLE UI STATES -->
+
+    <!-- MODAL DIALOGS FOR FORMS -->
+
+    <!-- Laravel User Account Modal -->
+    <div id="user-account-modal" class="modal">
+        <div class="modal-content modal-md">
+            <div class="modal-header">
+                <h3>Create User Account</h3>
+                <button class="close-modal-btn">&times;</button>
+            </div>
+            <form id="user-account-form">
+                <div class="modal-body">
+                    <p class="text-meta mb-4">This account will be stored in the Laravel users table and can sign in through the system login.</p>
+
+                    <div class="form-group">
+                        <label for="account-name">Full Name *</label>
+                        <input type="text" id="account-name" required placeholder="e.g. Juan Dela Cruz">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="account-username">Username *</label>
+                        <input type="text" id="account-username" required pattern="[A-Za-z0-9_-]+" placeholder="e.g. juandc">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="account-email">Email *</label>
+                        <input type="email" id="account-email" required placeholder="e.g. juan@example.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="account-role">Account Role *</label>
+                        <select id="account-role" required>
+                            <option value="Administrator">Administrator</option>
+                            <option value="Cashier">Cashier</option>
+                            <option value="Warehouse Staff">Warehouse Staff</option>
+                            <option value="Super Admin">Super Admin</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="account-password">Password *</label>
+                        <input type="password" id="account-password" required minlength="8" autocomplete="new-password">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="account-password-confirmation">Confirm Password *</label>
+                        <input type="password" id="account-password-confirmation" required minlength="8" autocomplete="new-password">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary close-modal-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span>Create Account</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Product Modal (Add / Edit) -->
+    <div id="product-modal" class="modal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3 id="product-modal-title">Add New Product</h3>
+                <button class="close-modal-btn">&times;</button>
+            </div>
+            <form id="product-form">
+                <input type="hidden" id="product-id">
+                <div class="modal-body">
+                    <div class="form-grid">
+                        <div class="form-group col-span-2">
+                            <label for="prod-name">Product Name *</label>
+                            <input type="text" id="prod-name" required placeholder="e.g. Premium Wireless Mouse">
+                        </div>
+                        <div class="form-group">
+                            <label for="prod-sku">SKU *</label>
+                            <input type="text" id="prod-sku" required placeholder="e.g. MOUSE-W-01">
+                        </div>
+                        <div class="form-group">
+                            <label for="prod-barcode">Barcode / UPC</label>
+                            <div class="input-group">
+                                <input type="text" id="prod-barcode" placeholder="e.g. 4801234567890">
+                                <button type="button" class="btn btn-secondary" id="gen-barcode-btn" title="Auto-generate Barcode">Generate</button>
+                            </div>
+                            <div class="barcode-preview-box hidden" id="modal-barcode-preview"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="prod-category">Category *</label>
+                            <select id="prod-category" required>
+                                <!-- Categories dynamically loaded -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="prod-brand">Brand *</label>
+                            <select id="prod-brand" required>
+                                <!-- Brands dynamically loaded -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="prod-supplier">Supplier *</label>
+                            <select id="prod-supplier" required>
+                                <!-- Suppliers dynamically loaded -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="prod-unit">Unit *</label>
+                            <select id="prod-unit" required>
+                                <option value="pcs">Pieces (pcs)</option>
+                                <option value="box">Box</option>
+                                <option value="kg">Kilograms (kg)</option>
+                                <option value="liters">Liters (L)</option>
+                                <option value="pack">Pack</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="prod-purchase-price">Purchase Price (₱) *</label>
+                            <input type="number" id="prod-purchase-price" step="0.01" min="0" required placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="prod-selling-price">Selling Price (₱) *</label>
+                            <input type="number" id="prod-selling-price" step="0.01" min="0" required placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="prod-qty">Starting Quantity *</label>
+                            <input type="number" id="prod-qty" min="0" required placeholder="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="prod-expiration">Expiration Date (Optional)</label>
+                            <input type="date" id="prod-expiration">
+                        </div>
+                        <div class="form-group col-span-2">
+                            <label for="prod-desc">Description</label>
+                            <textarea id="prod-desc" rows="2" placeholder="Brief description of the product..."></textarea>
+                        </div>
+                        <div class="form-group col-span-2">
+                            <label for="prod-image">Product Image URL (Optional)</label>
+                            <input type="text" id="prod-image" placeholder="Leave empty for auto-generated placeholder SVG">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary close-modal-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div id="category-modal" class="modal">
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h3 id="category-modal-title">Add Category</h3>
+                <button class="close-modal-btn">&times;</button>
+            </div>
+            <form id="category-form">
+                <input type="hidden" id="category-id">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="cat-name">Category Name *</label>
+                        <input type="text" id="cat-name" required placeholder="e.g. Electronics">
+                    </div>
+                    <div class="form-group">
+                        <label for="cat-desc">Description</label>
+                        <textarea id="cat-desc" rows="3" placeholder="Category description..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary close-modal-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Brand Modal -->
+    <div id="brand-modal" class="modal">
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h3 id="brand-modal-title">Add Brand</h3>
+                <button class="close-modal-btn">&times;</button>
+            </div>
+            <form id="brand-form">
+                <input type="hidden" id="brand-id">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="brand-name">Brand Name *</label>
+                        <input type="text" id="brand-name" required placeholder="e.g. Logitech">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary close-modal-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Brand</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Supplier Modal -->
+    <div id="supplier-modal" class="modal">
+        <div class="modal-content modal-md">
+            <div class="modal-header">
+                <h3 id="supplier-modal-title">Add Supplier</h3>
+                <button class="close-modal-btn">&times;</button>
+            </div>
+            <form id="supplier-form">
+                <input type="hidden" id="supplier-id">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="supp-company">Company Name *</label>
+                        <input type="text" id="supp-company" required placeholder="e.g. Tech Solutions Inc.">
+                    </div>
+                    <div class="form-group">
+                        <label for="supp-contact">Contact Person *</label>
+                        <input type="text" id="supp-contact" required placeholder="e.g. John Doe">
+                    </div>
+                    <div class="two-column-layout gap-2">
+                        <div class="form-group">
+                            <label for="supp-phone">Phone Number *</label>
+                            <input type="text" id="supp-phone" required placeholder="e.g. 555-1234">
+                        </div>
+                        <div class="form-group">
+                            <label for="supp-email">Email Address *</label>
+                            <input type="email" id="supp-email" required placeholder="e.g. contact@techsol.com">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="supp-address">Address *</label>
+                        <textarea id="supp-address" rows="3" required placeholder="Company address..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary close-modal-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Supplier</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Purchase Order Modal -->
+    <div id="po-modal" class="modal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3>Create Purchase Order</h3>
+                <button class="close-modal-btn">&times;</button>
+            </div>
+            <form id="po-form">
+                <div class="modal-body">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="po-supplier-select">Select Supplier *</label>
+                            <select id="po-supplier-select" required>
+                                <!-- Loaded dynamically -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="po-expected-date">Expected Delivery Date *</label>
+                            <input type="date" id="po-expected-date" required>
+                        </div>
+                    </div>
+
+                    <h4 class="mt-4 mb-2">Order Items</h4>
+                    <div class="po-items-selection-container">
+                        <div class="po-item-add-row flex-actions gap-2 mb-3">
+                            <select id="po-item-select-product" class="flex-grow">
+                                <option value="">Choose product to order...</option>
+                            </select>
+                            <input type="number" id="po-item-qty" placeholder="Qty" min="1" class="w-80">
+                            <button type="button" id="po-add-item-btn" class="btn btn-secondary"><i class="fa-solid fa-plus"></i> Add Item</button>
+                        </div>
+                        
+                        <div class="table-responsive select-qty-table">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Product Name</th>
+                                        <th>Purchase Cost (₱)</th>
+                                        <th>Quantity</th>
+                                        <th>Total Cost</th>
+                                        <th class="text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="po-added-items-body">
+                                    <tr id="po-empty-row">
+                                        <td colspan="5" class="text-center text-muted">No items added to this order yet.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary close-modal-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="save-po-submit-btn" disabled>Create Purchase Order</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Inventory Stock Adjustment Modal -->
+    <div id="inventory-adjust-modal" class="modal">
+        <div class="modal-content modal-md">
+            <div class="modal-header">
+                <h3>Inventory Stock Adjustment</h3>
+                <button class="close-modal-btn">&times;</button>
+            </div>
+            <form id="inventory-adjust-form">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="adj-product">Select Product *</label>
+                        <select id="adj-product" required>
+                            <!-- Loaded dynamically -->
+                        </select>
+                    </div>
+                    <div class="two-column-layout gap-2">
+                        <div class="form-group">
+                            <label for="adj-type">Adjustment Type *</label>
+                            <select id="adj-type" required>
+                                <option value="Stock In">Stock In (Increment)</option>
+                                <option value="Stock Out">Stock Out (Decrement)</option>
+                                <option value="Adjustment">Correction / Count Sync</option>
+                                <option value="Damaged">Damaged Write-Off</option>
+                                <option value="Expired">Expired Write-Off</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="adj-qty">Quantity *</label>
+                            <input type="number" id="adj-qty" min="1" required placeholder="e.g. 5">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="adj-reason">Reason / Reference Notes *</label>
+                        <textarea id="adj-reason" rows="3" required placeholder="Reason for adjusting stock (e.g. Physical inventory count correction)"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary close-modal-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Adjustment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Inventory Stock Transfer Modal -->
+    <div id="inventory-transfer-modal" class="modal">
+        <div class="modal-content modal-md">
+            <div class="modal-header">
+                <h3>Stock Transfer</h3>
+                <button class="close-modal-btn">&times;</button>
+            </div>
+            <form id="inventory-transfer-form">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="xfer-product">Select Product *</label>
+                        <select id="xfer-product" required>
+                            <!-- Loaded dynamically -->
+                        </select>
+                    </div>
+                    <div class="two-column-layout gap-2">
+                        <div class="form-group">
+                            <label for="xfer-source">Source Location *</label>
+                            <select id="xfer-source" required>
+                                <option value="Main Warehouse">Main Warehouse</option>
+                                <option value="Retail Store Shelf">Retail Store Shelf</option>
+                                <option value="Secondary Depot">Secondary Depot</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="xfer-destination">Destination Location *</label>
+                            <select id="xfer-destination" required>
+                                <option value="Retail Store Shelf">Retail Store Shelf</option>
+                                <option value="Main Warehouse">Main Warehouse</option>
+                                <option value="Secondary Depot">Secondary Depot</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="two-column-layout gap-2">
+                        <div class="form-group">
+                            <label for="xfer-qty">Quantity to Transfer *</label>
+                            <input type="number" id="xfer-qty" min="1" required placeholder="e.g. 10">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="xfer-notes">Reference Notes</label>
+                        <textarea id="xfer-notes" rows="2" placeholder="e.g. Transferring stock to front display shelves"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary close-modal-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Execute Transfer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Customer Modal -->
+    <div id="customer-modal" class="modal">
+        <div class="modal-content modal-md">
+            <div class="modal-header">
+                <h3 id="customer-modal-title">Add Customer</h3>
+                <button class="close-modal-btn">&times;</button>
+            </div>
+            <form id="customer-form">
+                <input type="hidden" id="customer-id">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="cust-name">Customer Name *</label>
+                        <input type="text" id="cust-name" required placeholder="e.g. Alice Smith">
+                    </div>
+                    <div class="two-column-layout gap-2">
+                        <div class="form-group">
+                            <label for="cust-phone">Phone Number</label>
+                            <input type="text" id="cust-phone" placeholder="e.g. 555-5678">
+                        </div>
+                        <div class="form-group">
+                            <label for="cust-email">Email Address</label>
+                            <input type="email" id="cust-email" placeholder="e.g. alice@gmail.com">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="cust-address">Address</label>
+                        <textarea id="cust-address" rows="3" placeholder="Customer billing/delivery address..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary close-modal-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Customer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Employee Modal -->
+    <div id="employee-modal" class="modal">
+        <div class="modal-content modal-md">
+            <div class="modal-header">
+                <h3 id="employee-modal-title">Add Employee</h3>
+                <button class="close-modal-btn">&times;</button>
+            </div>
+            <form id="employee-form">
+                <input type="hidden" id="employee-id">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="emp-name">Full Name *</label>
+                        <input type="text" id="emp-name" required placeholder="e.g. Robert Johnson">
+                    </div>
+                    <div class="two-column-layout gap-2">
+                        <div class="form-group">
+                            <label for="emp-position">Position / Role *</label>
+                            <select id="emp-position" required>
+                                <option value="Super Admin">Super Admin</option>
+                                <option value="Administrator">Administrator</option>
+                                <option value="Cashier">Cashier</option>
+                                <option value="Warehouse Staff">Warehouse Staff</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="emp-username">System Username *</label>
+                            <input type="text" id="emp-username" required placeholder="e.g. robertj">
+                        </div>
+                    </div>
+                    <div class="two-column-layout gap-2">
+                        <div class="form-group">
+                            <label for="emp-password">System Password (New/Reset)</label>
+                            <input type="password" id="emp-password" placeholder="••••••••" autocomplete="new-password">
+                        </div>
+                        <div class="form-group">
+                            <label for="emp-phone">Phone Number</label>
+                            <input type="text" id="emp-phone" placeholder="e.g. 555-9012">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="emp-email">Email Address *</label>
+                        <input type="email" id="emp-email" required placeholder="e.g. robert@company.com">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary close-modal-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Employee</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- POS Payment Checkout Modal -->
+    <div id="pos-checkout-modal" class="modal">
+        <div class="modal-content modal-md">
+            <div class="modal-header">
+                <h3>Complete Sale - Checkout</h3>
+                <button class="close-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="checkout-summary-strip mb-4">
+                    <span>Grand Total:</span>
+                    <strong id="checkout-grand-total">₱0.00</strong>
+                </div>
+
+                <div class="form-group">
+                    <label for="checkout-payment-method">Select Payment Method *</label>
+                    <select id="checkout-payment-method" class="select-large">
+                        <option value="Cash">Cash Payment</option>
+                        <option value="GCash">GCash Mobile Wallet</option>
+                        <option value="Maya">Maya Mobile Wallet</option>
+                        <option value="Credit Card">Credit / Debit Card</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                    </select>
+                </div>
+
+                <!-- Cash Payment Specific Group -->
+                <div id="checkout-cash-group" class="form-group transition-fade">
+                    <label for="checkout-cash-tendered">Amount Tendered (₱) *</label>
+                    <input type="number" id="checkout-cash-tendered" step="0.01" min="0" placeholder="0.00" class="input-large">
+                    <div class="checkout-change-strip mt-3">
+                        <span>Change Due:</span>
+                        <strong id="checkout-change-amount">₱0.00</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary close-modal-btn">Cancel</button>
+                <button class="btn btn-success" id="checkout-complete-btn">Record Payment & Print Receipt</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thermal Receipt Preview Modal -->
+    <div id="receipt-modal" class="modal">
+        <div class="modal-content modal-receipt">
+            <div class="modal-header hide-on-print">
+                <h3>Receipt Printer Preview</h3>
+                <button class="close-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="receipt-thermal-paper" id="receipt-thermal-paper">
+                    <!-- Dynamic receipt contents -->
+                </div>
+            </div>
+            <div class="modal-footer hide-on-print">
+                <button class="btn btn-secondary close-modal-btn">Close</button>
+                <button class="btn btn-primary" onclick="window.print()"><i class="fa-solid fa-print"></i> Print Receipt</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- General Quick Scanner Bar -->
+    <div id="quick-scanner-container" class="quick-scanner-tray hidden">
+        <div class="tray-content">
+            <div class="tray-header">
+                <span><i class="fa-solid fa-barcode"></i> Global Barcode Scanner Simulator</span>
+                <button id="quick-scanner-close" class="close-btn">&times;</button>
+            </div>
+            <div class="tray-body">
+                <p class="text-meta mb-2">Simulate scanning a product by entering its barcode. This will look up details or add it to the active view.</p>
+                <div class="input-group">
+                    <input type="text" id="quick-scan-input" placeholder="Type or copy barcode (e.g. 100000000001)...">
+                    <button id="quick-scan-submit-btn" class="btn btn-primary">Scan Barcode</button>
+                </div>
+                <div id="quick-scan-result" class="quick-scan-result-box hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Core App Logic -->
+    <script src="app.js"></script>
+</body>
+</html>
