@@ -1,44 +1,53 @@
-# Deliverable 4 — Deployment Plan and Evidence
+# Week 11 — Deployment Notes
 
-## Goal
-Deploy the Laravel Inventory Management System to a live public host and verify the production build.
+## Current status
 
-The Deliverable 4 handout requires a live public URL with end-to-end CRUD, graceful failure handling, and a passing quality-evidence package. fileciteturn211file0L9-L25
+**LOCAL PREPARATION: COMPLETE**  
+**PUBLIC DEPLOYMENT: PENDING**
 
-## Current deployment status
-STATUS: PENDING
+The application has been tested locally and the local automated suite currently reports 46 passing tests and 150 assertions.
 
-No public production URL is claimed here until an actual deployment is completed and verified.
+## Production configuration
 
-## Pre-deployment checklist
-- [ ] Configure production environment and database.
-- [ ] Generate application key.
-- [ ] Run migrations.
-- [ ] Run automated tests.
-- [ ] Configure correct document root.
-- [ ] Disable debug mode.
-- [ ] Protect production secrets.
-- [ ] Verify storage/writable directories.
-- [ ] Confirm HTTPS.
-- [ ] Verify login.
-- [ ] Verify Product/Supplier/Category CRUD.
-- [ ] Verify graceful validation and failure messages.
-- [ ] Record public URL.
+Set these values on the hosting provider rather than committing secrets:
 
-## Production verification
-| Item | Result |
+- APP_ENV=production
+- APP_KEY=generated production key
+- APP_DEBUG=false
+- APP_URL=public application URL
+- DB_CONNECTION=production driver
+- DB_HOST=production host
+- DB_PORT=production port
+- DB_DATABASE=production database
+- DB_USERNAME=production username
+- DB_PASSWORD=production password
+
+Do not commit actual production credentials.
+
+## Deployment sequence
+
+1. Provision the host.
+2. Configure production environment variables.
+3. Install Composer dependencies.
+4. Deploy the repository.
+5. Run production migrations.
+6. Confirm the application is reachable.
+7. Test login.
+8. Test Product/Supplier/Category CRUD.
+9. Submit invalid data and confirm the 422 message.
+10. Record the public URL and deployment date.
+
+## Smoke-test record
+
+| Check | Result |
 |---|---|
 | Public URL | PENDING |
-| HTTPS | PENDING |
 | Login | PENDING |
-| Product CRUD | PENDING |
-| Supplier CRUD | PENDING |
-| Category CRUD | PENDING |
-| Validation errors | PENDING |
-| Not-found handling | PENDING |
-| Server failure handling | PENDING |
-| Network failure handling | PENDING |
-| Automated tests | PASS — 46 tests / 150 assertions locally |
+| Create | PENDING |
+| View | PENDING |
+| Edit | PENDING |
+| Delete | PENDING |
+| 422 invalid data | PENDING |
+| Migrations | PENDING |
 
-## Security release gate
-Never deploy passwords, API keys, database credentials, or debug-enabled production configuration. The handout identifies committed secrets and debug-on production as release failures. fileciteturn211file0L49-L55
+No live result is marked PASS until it has been observed at the public URL.
