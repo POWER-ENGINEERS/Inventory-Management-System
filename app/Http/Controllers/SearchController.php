@@ -9,6 +9,11 @@ class SearchController extends Controller
 {
     public function searchProducts(Request $request)
     {
+        $request->validate([
+            'search' => 'nullable|string|max:100',
+            'q' => 'nullable|string|max:100',
+        ]);
+
         $search = trim((string) $request->query('search', $request->query('q', '')));
 
         $products = Product::with(['category','supplier'])
