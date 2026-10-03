@@ -10,7 +10,10 @@ File: `tests/Feature/Week7BindingTest.php`
 - [ ] Frontend-shaped Product Update persists to Laravel
 - [ ] Frontend-shaped Supplier Create persists to Laravel
 - [ ] Frontend-shaped Supplier Update persists to Laravel
+- [ ] Frontend-shaped Category Create persists to Laravel
+- [ ] Frontend-shaped Category Update persists to Laravel
 - [ ] Invalid Product data returns HTTP 422 validation errors
+- [ ] Invalid Supplier data returns HTTP 422 validation errors
 
 ## Manual browser tests
 
