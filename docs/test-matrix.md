@@ -36,13 +36,13 @@ These are real problems that were previously encountered during development. The
 
 | Previous problem | Regression test | Expected result | Result / Notes |
 |---|---|---|---|
-| Employee page previously returned to Dashboard instead of opening the employee page | Click Employee from the dashboard/sidebar | Employee page opens and stays on the employee feature | Not run |
-| Dashboard previously had an empty state/problem during earlier integration work | Open Dashboard with normal logged-in account and with an empty dataset | Dashboard loads correctly and displays an intentional empty state when there is no data | Not run |
-| Categories previously had empty-state/integration issues | Open Categories with no categories and then with categories | Empty state is clear; categories load correctly after data exists | Not run |
-| Brands previously had empty-state/integration issues | Open the Brands feature/section if present | Empty state is clear and data loads correctly | Not run |
-| Protected API tests previously returned 401 because test requests did not include authentication tokens | Run protected API requests/tests without and with a token | Unauthenticated requests are rejected; authenticated requests work | Not run |
-| Duplicate users.phone migrations previously caused duplicate-column test failures | Run migrations/tests from a clean test database | Migrations complete without attempting to add phone twice | Not run |
-| Horizontal bottom navigation/scroller was previously removed from the frontend | Resize/scroll the application and inspect the bottom of the layout | No unwanted horizontal bottom navigation/scroller appears | Not run |
+| Employee page previously returned to Dashboard instead of opening the employee page | Click Employee from the dashboard/sidebar | Employee page opens and stays on the employee feature | PASS — previously resolved and reported working |
+| Dashboard previously had an empty state/problem during earlier integration work | Open Dashboard with normal logged-in account and with an empty dataset | Dashboard loads correctly and displays an intentional empty state when there is no data | PASS — previously resolved and reported working |
+| Categories previously had empty-state/integration issues | Open Categories with no categories and then with categories | Empty state is clear; categories load correctly after data exists | PASS — previously resolved and reported working |
+| Brands previously had empty-state/integration issues | Open the Brands feature/section if present | Empty state is clear and data loads correctly | PASS — previously resolved and reported working |
+| Protected API tests previously returned 401 because test requests did not include authentication tokens | Run protected API requests/tests without and with a token | Unauthenticated requests are rejected; authenticated requests work | PASS — authentication-token test setup previously fixed |
+| Duplicate users.phone migrations previously caused duplicate-column test failures | Run migrations/tests from a clean test database | Migrations complete without attempting to add phone twice | PASS — duplicate migration previously fixed |
+| Horizontal bottom navigation/scroller was previously removed from the frontend | Resize/scroll the application and inspect the bottom of the layout | No unwanted horizontal bottom navigation/scroller appears | PASS — previously removed and reported resolved |
 
 ## Manual QA workflow
 
