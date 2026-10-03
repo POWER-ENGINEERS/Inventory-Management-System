@@ -905,7 +905,6 @@ function showToast(title, message, type = "info") {
 
         try {
             await loadBackendState();
-            await syncBackendCatalog();
         } catch (error) {
             console.error("Unable to load Laravel application state:", error);
             showToast("Backend Load Failed", error.message || "Could not load application data from Laravel.", "danger");
@@ -1309,6 +1308,7 @@ function showToast(title, message, type = "info") {
                 db.products.push(savedProduct);
                 showToast("Product Registered", `${savedProduct.name} was saved to the Laravel database.`, "success");
             }
+            await saveDatabase();
             closeModal("product-modal");
             renderProductsTable();
         } catch (error) {
@@ -1535,7 +1535,7 @@ function showToast(title, message, type = "info") {
         openModal("category-modal");
     });
 
-    document.getElementById("category-form").addEventListener("submit", function (e) {
+    document.getElementById("category-form").addEventListener("submit", async function (e) {
         e.preventDefault();
         const id = document.getElementById("category-id").value;
         const name = document.getElementById("cat-name").value.trim();
@@ -1556,7 +1556,7 @@ function showToast(title, message, type = "info") {
             logAudit("Settings", `Created Category: ${name}`);
         }
 
-        saveDatabase();
+        await saveDatabase();
         closeModal("category-modal");
         renderCategoriesAndBrands();
         populateDropdowns();
@@ -1569,7 +1569,7 @@ function showToast(title, message, type = "info") {
         openModal("brand-modal");
     });
 
-    document.getElementById("brand-form").addEventListener("submit", function (e) {
+    document.getElementById("brand-form").addEventListener("submit", async function (e) {
         e.preventDefault();
         const id = document.getElementById("brand-id").value;
         const name = document.getElementById("brand-name").value.trim();
@@ -1588,7 +1588,7 @@ function showToast(title, message, type = "info") {
             logAudit("Settings", `Created Brand: ${name}`);
         }
 
-        saveDatabase();
+        await saveDatabase();
         closeModal("brand-modal");
         renderCategoriesAndBrands();
         populateDropdowns();
@@ -1650,7 +1650,7 @@ function showToast(title, message, type = "info") {
                 const id = this.getAttribute("data-id");
                 if (confirm("Delete Category? Any product linked to this category will display N/A.")) {
                     db.categories = db.categories.filter(c => c.id !== id);
-                    saveDatabase();
+                    await saveDatabase();
                     renderCategoriesAndBrands();
                 }
             });
@@ -1723,6 +1723,7 @@ function showToast(title, message, type = "info") {
                 db.suppliers.push(savedSupplier);
                 showToast("Supplier Created", `${savedSupplier.company} was saved to the Laravel database.`, "success");
             }
+            await saveDatabase();
             closeModal("supplier-modal");
             populateDropdowns();
             renderSuppliersTable();
@@ -1799,12 +1800,19 @@ function showToast(title, message, type = "info") {
         });
 
         tbody.querySelectorAll(".delete-sup-btn").forEach(btn => {
-            btn.addEventListener("click", function () {
+            btn.addEventListener("click", async function () {
                 const id = this.getAttribute("data-id");
-                if (confirm("Delete supplier partner? This will disconnect catalog items linked to this company.")) {
+                if (!confirm("Delete supplier partner? This will disconnect catalog items linked to this company.")) return;
+
+                try {
+                    await apiRequest(`/suppliers/${encodeURIComponent(id)}`, { method: "DELETE" });
                     db.suppliers = db.suppliers.filter(s => s.id !== id);
-                    saveDatabase();
+                    await saveDatabase();
+                    populateDropdowns();
                     renderSuppliersTable();
+                    showToast("Supplier Deleted", "Supplier removed from the Laravel database.", "success");
+                } catch (error) {
+                    showToast("Delete Failed", error.message || "Could not delete the supplier.", "danger");
                 }
             });
         });
