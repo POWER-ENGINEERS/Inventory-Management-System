@@ -9,132 +9,123 @@ use Illuminate\Support\Facades\DB;
 
 class StockInController extends Controller
 {
-    /**
-     * Display a list of all stock-in transactions.
-     */
     public function listStockIns()
     {
-        $stockIns = InventoryTransaction::where('transaction_type', 'stock_in')
-            ->with('product')
-            ->orderByDesc('transaction_date')
-            ->get();
-
         return response()->json([
             'status' => 'success',
-            'data' => $stockIns,
+            'data' => InventoryTransaction::with('product')
+                ->where('transaction_type', 'stock_in')
+                ->orderByDesc('transaction_date')
+                ->get(),
         ]);
     }
 
-    /**
-     * Display a specific stock-in transaction.
-     */
     public function showStockIn($id)
     {
-        $stockIn = InventoryTransaction::where('transaction_type', 'stock_in')
-            ->with('product')
-            ->findOrFail($id);
+        $stockIn = InventoryTransaction::with('product')
+            ->where('transaction_type', 'stock_in')
+            ->find($id);
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $stockIn,
-        ]);
+        if (!$stockIn) {
+            return response()->json(['status'=>'error','error'=>'Stock-in transaction not found'], 404);
+        }
+
+        return response()->json(['status'=>'success','data'=>$stockIn]);
     }
 
-    /**
-     * Create a new stock-in transaction.
-     */
     public function createStockIn(Request $request)
     {
-        $validated = $request->validate([
-            'product_id' => 'required|exists:products,product_id',
-            'quantity' => 'required|integer|min:1',
+        $data = $request->validate([
+            'product_id' => ['required','exists:products,product_id'],
+            'quantity' => ['required','integer','min:1'],
+            'transaction_date' => ['nullable','date'],
         ]);
 
-        $stockIn = DB::transaction(function () use ($validated) {
-            $product = Product::findOrFail($validated['product_id']);
-
-            $product->increment('quantity', $validated['quantity']);
+        $stockIn = DB::transaction(function () use ($data) {
+            $product = Product::lockForUpdate()->findOrFail($data['product_id']);
+            $product->increment('quantity', $data['quantity']);
 
             return InventoryTransaction::create([
                 'product_id' => $product->product_id,
                 'transaction_type' => 'stock_in',
-                'quantity' => $validated['quantity'],
-                'transaction_date' => now(),
+                'quantity' => $data['quantity'],
+                'transaction_date' => $data['transaction_date'] ?? now(),
             ]);
         });
 
         return response()->json([
-            'status' => 'success',
-            'data' => [
-                'message' => 'Stock in recorded successfully',
-                'transaction' => $stockIn,
-            ],
+            'status'=>'success',
+            'data'=>['message'=>'Stock in recorded successfully','transaction'=>$stockIn->load('product')],
         ], 201);
     }
 
-    /**
-     * Update an existing stock-in transaction.
-     */
     public function updateStockIn(Request $request, $id)
     {
-        $validated = $request->validate([
-            'product_id' => 'required|exists:products,product_id',
-            'quantity' => 'required|integer|min:1',
+        $data = $request->validate([
+            'product_id' => ['required','exists:products,product_id'],
+            'quantity' => ['required','integer','min:1'],
+            'transaction_date' => ['nullable','date'],
         ]);
 
-        $stockIn = DB::transaction(function () use ($validated, $id) {
-            $stockIn = InventoryTransaction::where('transaction_type', 'stock_in')
-                ->findOrFail($id);
+        $stockIn = DB::transaction(function () use ($data, $id) {
+            $transaction = InventoryTransaction::where('transaction_type','stock_in')->lockForUpdate()->find($id);
+            if (!$transaction) {
+                abort(response()->json(['status'=>'error','error'=>'Stock-in transaction not found'], 404));
+            }
 
-            $oldProduct = Product::findOrFail($stockIn->product_id);
-            $newProduct = Product::findOrFail($validated['product_id']);
+            $oldProduct = Product::lockForUpdate()->findOrFail($transaction->product_id);
+            $newProduct = Product::lockForUpdate()->findOrFail($data['product_id']);
 
-            if ($oldProduct->product_id == $newProduct->product_id) {
-                $difference = $validated['quantity'] - $stockIn->quantity;
-
+            if ($oldProduct->product_id === $newProduct->product_id) {
+                $difference = $data['quantity'] - $transaction->quantity;
                 if ($difference > 0) {
                     $oldProduct->increment('quantity', $difference);
                 } elseif ($difference < 0) {
-                    $oldProduct->decrement('quantity', abs($difference));
+                    $decrease = abs($difference);
+                    if ($oldProduct->quantity < $decrease) {
+                        abort(response()->json(['status'=>'error','error'=>'Current stock cannot support reducing this transaction.'], 409));
+                    }
+                    $oldProduct->decrement('quantity', $decrease);
                 }
             } else {
-                $oldProduct->decrement('quantity', $stockIn->quantity);
-                $newProduct->increment('quantity', $validated['quantity']);
+                if ($oldProduct->quantity < $transaction->quantity) {
+                    abort(response()->json(['status'=>'error','error'=>'Cannot move this transaction because current stock is lower than its quantity.'], 409));
+                }
+                $oldProduct->decrement('quantity', $transaction->quantity);
+                $newProduct->increment('quantity', $data['quantity']);
             }
 
-            $stockIn->update([
-                'product_id' => $newProduct->product_id,
-                'quantity' => $validated['quantity'],
+            $transaction->update([
+                'product_id'=>$newProduct->product_id,
+                'quantity'=>$data['quantity'],
+                'transaction_date'=>$data['transaction_date'] ?? $transaction->transaction_date,
             ]);
 
-            return $stockIn->fresh();
+            return $transaction->fresh('product');
         });
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $stockIn,
-        ]);
+        return response()->json(['status'=>'success','data'=>$stockIn]);
     }
 
-    /**
-     * Delete an existing stock-in transaction.
-     */
     public function deleteStockIn($id)
     {
-        $stockIn = InventoryTransaction::where('transaction_type', 'stock_in')
-            ->findOrFail($id);
+        $result = DB::transaction(function () use ($id) {
+            $transaction = InventoryTransaction::where('transaction_type','stock_in')->lockForUpdate()->find($id);
+            if (!$transaction) {
+                abort(response()->json(['status'=>'error','error'=>'Stock-in transaction not found'], 404));
+            }
 
-        DB::transaction(function () use ($stockIn) {
-            $product = Product::findOrFail($stockIn->product_id);
+            $product = Product::lockForUpdate()->findOrFail($transaction->product_id);
+            if ($product->quantity < $transaction->quantity) {
+                abort(response()->json(['status'=>'error','error'=>'Cannot delete this transaction because current stock is lower than the transaction quantity.'], 409));
+            }
 
-            $product->decrement('quantity', $stockIn->quantity);
+            $product->decrement('quantity', $transaction->quantity);
+            $transaction->delete();
 
-            $stockIn->delete();
+            return true;
         });
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Stock-in deleted successfully',
-        ]);
+        return response()->json(['status'=>'success','data'=>['message'=>'Stock-in deleted successfully']]);
     }
 }

@@ -15,11 +15,23 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $password = env('SUPER_ADMIN_PASSWORD');
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        if (!$password) {
+            throw new \RuntimeException(
+                'SUPER_ADMIN_PASSWORD must be set in .env before running the database seeder.'
+            );
+        }
+
+        User::updateOrCreate(
+            ['username' => env('SUPER_ADMIN_USERNAME', 'superadmin')],
+            [
+                'name' => env('SUPER_ADMIN_NAME', 'Super Admin'),
+                'email' => env('SUPER_ADMIN_EMAIL', 'superadmin@dabugss.com'),
+                'password' => $password,
+                'role' => 'Super Admin',
+                'status' => 'Active',
+            ]
+        );
     }
 }

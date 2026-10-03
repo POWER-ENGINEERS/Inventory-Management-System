@@ -8,7 +8,8 @@ use App\Models\Product;
 uses(RefreshDatabase::class);
 
 test('products endpoint returns successful response', function () {
-    $response = $this->getJson('/api/products');
+    $response = $this->withToken(authToken())
+        ->getJson('/api/products');
 
     $response->assertStatus(200)
         ->assertJson([
@@ -34,7 +35,8 @@ test('product details returns the requested product', function () {
         'price' => 25000,
     ]);
 
-    $response = $this->getJson('/api/products/' . $product->product_id);
+    $response = $this->withToken(authToken())
+        ->getJson('/api/products/' . $product->product_id);
 
     $response->assertStatus(200)
         ->assertJson([
@@ -56,13 +58,14 @@ test('product can be created successfully', function () {
         'contact_number' => '09999999999',
     ]);
 
-    $response = $this->postJson('/api/products', [
-        'product_name' => 'Gaming PC',
-        'category_id' => $category->category_id,
-        'supplier_id' => $supplier->supplier_id,
-        'quantity' => 10,
-        'price' => 50000,
-    ]);
+    $response = $this->withToken(authToken())
+        ->postJson('/api/products', [
+            'product_name' => 'Gaming PC',
+            'category_id' => $category->category_id,
+            'supplier_id' => $supplier->supplier_id,
+            'quantity' => 10,
+            'price' => 50000,
+        ]);
 
     $response->assertStatus(201)
         ->assertJson([
@@ -99,11 +102,12 @@ test('product can be updated successfully', function () {
         'price' => 20000,
     ]);
 
-    $response = $this->putJson('/api/products/' . $product->product_id, [
-        'product_name' => 'Updated Laptop',
-        'quantity' => 15,
-        'price' => 30000,
-    ]);
+    $response = $this->withToken(authToken())
+        ->putJson('/api/products/' . $product->product_id, [
+            'product_name' => 'Updated Laptop',
+            'quantity' => 15,
+            'price' => 30000,
+        ]);
 
     $response->assertStatus(200)
         ->assertJson([
@@ -140,7 +144,8 @@ test('product can be deleted successfully', function () {
         'price' => 1000,
     ]);
 
-    $response = $this->deleteJson('/api/products/' . $product->product_id);
+    $response = $this->withToken(authToken())
+        ->deleteJson('/api/products/' . $product->product_id);
 
     $response->assertStatus(200)
         ->assertJson([
@@ -156,9 +161,10 @@ test('product can be deleted successfully', function () {
 });
 
 test('product creation fails when required fields are missing', function () {
-    $response = $this->postJson('/api/products', [
-        'product_name' => 'Incomplete Product',
-    ]);
+    $response = $this->withToken(authToken())
+        ->postJson('/api/products', [
+            'product_name' => 'Incomplete Product',
+        ]);
 
     $response->assertStatus(422)
         ->assertJsonValidationErrors([
@@ -170,7 +176,8 @@ test('product creation fails when required fields are missing', function () {
 });
 
 test('product details returns 404 when product does not exist', function () {
-    $response = $this->getJson('/api/products/9999');
+    $response = $this->withToken(authToken())
+        ->getJson('/api/products/9999');
 
     $response->assertStatus(404)
         ->assertJson([

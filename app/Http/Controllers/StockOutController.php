@@ -9,156 +9,122 @@ use Illuminate\Support\Facades\DB;
 
 class StockOutController extends Controller
 {
-    /**
-     * Display all stock-out transactions.
-     */
     public function listStockOuts()
     {
-        $stockOuts = InventoryTransaction::where('transaction_type', 'stock_out')
-            ->with('product')
-            ->orderByDesc('transaction_date')
-            ->get();
-
         return response()->json([
-            'status' => 'success',
-            'data' => $stockOuts,
+            'status'=>'success',
+            'data'=>InventoryTransaction::with('product')
+                ->where('transaction_type','stock_out')
+                ->orderByDesc('transaction_date')
+                ->get(),
         ]);
     }
 
-    /**
-     * Display a specific stock-out transaction.
-     */
     public function showStockOut($id)
     {
-        $stockOut = InventoryTransaction::where('transaction_type', 'stock_out')
-            ->with('product')
-            ->findOrFail($id);
+        $stockOut = InventoryTransaction::with('product')
+            ->where('transaction_type','stock_out')
+            ->find($id);
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $stockOut,
-        ]);
-    }
-
-    /**
-     * Create a new stock-out transaction.
-     */
-    public function createStockOut(Request $request)
-    {
-        $validated = $request->validate([
-            'product_id' => 'required|exists:products,product_id',
-            'quantity' => 'required|integer|min:1',
-        ]);
-
-        $product = Product::findOrFail($validated['product_id']);
-
-        if ($product->quantity < $validated['quantity']) {
-            return response()->json([
-                'status' => 'error',
-                'error' => 'Insufficient stock',
-                'field' => 'quantity',
-            ], 422);
+        if (!$stockOut) {
+            return response()->json(['status'=>'error','error'=>'Stock-out transaction not found'], 404);
         }
 
-        $stockOut = DB::transaction(function () use ($validated, $product) {
-            $product->decrement('quantity', $validated['quantity']);
+        return response()->json(['status'=>'success','data'=>$stockOut]);
+    }
+
+    public function createStockOut(Request $request)
+    {
+        $data = $request->validate([
+            'product_id'=>['required','exists:products,product_id'],
+            'quantity'=>['required','integer','min:1'],
+            'transaction_date'=>['nullable','date'],
+        ]);
+
+        $stockOut = DB::transaction(function () use ($data) {
+            $product = Product::lockForUpdate()->findOrFail($data['product_id']);
+
+            if ($product->quantity < $data['quantity']) {
+                abort(response()->json(['status'=>'error','error'=>'Insufficient stock.','field'=>'quantity'], 422));
+            }
+
+            $product->decrement('quantity', $data['quantity']);
 
             return InventoryTransaction::create([
-                'product_id' => $product->product_id,
-                'transaction_type' => 'stock_out',
-                'quantity' => $validated['quantity'],
-                'transaction_date' => now(),
+                'product_id'=>$product->product_id,
+                'transaction_type'=>'stock_out',
+                'quantity'=>$data['quantity'],
+                'transaction_date'=>$data['transaction_date'] ?? now(),
             ]);
         });
 
         return response()->json([
-            'status' => 'success',
-            'data' => [
-                'message' => 'Stock out recorded successfully',
-                'transaction' => $stockOut,
-            ],
+            'status'=>'success',
+            'data'=>['message'=>'Stock out recorded successfully','transaction'=>$stockOut->load('product')],
         ], 201);
     }
 
-    /**
-     * Update an existing stock-out transaction.
-     */
     public function updateStockOut(Request $request, $id)
     {
-        $validated = $request->validate([
-            'product_id' => 'required|exists:products,product_id',
-            'quantity' => 'required|integer|min:1',
+        $data = $request->validate([
+            'product_id'=>['required','exists:products,product_id'],
+            'quantity'=>['required','integer','min:1'],
+            'transaction_date'=>['nullable','date'],
         ]);
 
-        $stockOut = DB::transaction(function () use ($validated, $id) {
-            $stockOut = InventoryTransaction::where('transaction_type', 'stock_out')
-                ->findOrFail($id);
+        $stockOut = DB::transaction(function () use ($data, $id) {
+            $transaction = InventoryTransaction::where('transaction_type','stock_out')->lockForUpdate()->find($id);
+            if (!$transaction) {
+                abort(response()->json(['status'=>'error','error'=>'Stock-out transaction not found'], 404));
+            }
 
-            $oldProduct = Product::findOrFail($stockOut->product_id);
-            $newProduct = Product::findOrFail($validated['product_id']);
+            $oldProduct = Product::lockForUpdate()->findOrFail($transaction->product_id);
+            $newProduct = Product::lockForUpdate()->findOrFail($data['product_id']);
 
-            if ($oldProduct->product_id == $newProduct->product_id) {
-                $difference = $validated['quantity'] - $stockOut->quantity;
-
+            if ($oldProduct->product_id === $newProduct->product_id) {
+                $difference = $data['quantity'] - $transaction->quantity;
                 if ($difference > 0) {
                     if ($oldProduct->quantity < $difference) {
-                        abort(response()->json([
-                            'status' => 'error',
-                            'error' => 'Insufficient stock',
-                            'field' => 'quantity',
-                        ], 422));
+                        abort(response()->json(['status'=>'error','error'=>'Insufficient stock.','field'=>'quantity'], 422));
                     }
-
                     $oldProduct->decrement('quantity', $difference);
                 } elseif ($difference < 0) {
                     $oldProduct->increment('quantity', abs($difference));
                 }
             } else {
-                if ($newProduct->quantity < $validated['quantity']) {
-                    abort(response()->json([
-                        'status' => 'error',
-                        'error' => 'Insufficient stock',
-                        'field' => 'quantity',
-                    ], 422));
+                if ($newProduct->quantity < $data['quantity']) {
+                    abort(response()->json(['status'=>'error','error'=>'Insufficient stock for the updated transaction.','field'=>'quantity'], 422));
                 }
-
-                $oldProduct->increment('quantity', $stockOut->quantity);
-                $newProduct->decrement('quantity', $validated['quantity']);
+                $oldProduct->increment('quantity', $transaction->quantity);
+                $newProduct->decrement('quantity', $data['quantity']);
             }
 
-            $stockOut->update([
-                'product_id' => $newProduct->product_id,
-                'quantity' => $validated['quantity'],
+            $transaction->update([
+                'product_id'=>$newProduct->product_id,
+                'quantity'=>$data['quantity'],
+                'transaction_date'=>$data['transaction_date'] ?? $transaction->transaction_date,
             ]);
 
-            return $stockOut->fresh();
+            return $transaction->fresh('product');
         });
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $stockOut,
-        ]);
+        return response()->json(['status'=>'success','data'=>$stockOut]);
     }
 
-    /**
-     * Delete an existing stock-out transaction.
-     */
     public function deleteStockOut($id)
     {
-        $stockOut = InventoryTransaction::where('transaction_type', 'stock_out')
-            ->findOrFail($id);
+        DB::transaction(function () use ($id) {
+            $transaction = InventoryTransaction::where('transaction_type','stock_out')->lockForUpdate()->find($id);
+            if (!$transaction) {
+                abort(response()->json(['status'=>'error','error'=>'Stock-out transaction not found'], 404));
+            }
 
-        DB::transaction(function () use ($stockOut) {
-            $product = Product::findOrFail($stockOut->product_id);
+            Product::lockForUpdate()->findOrFail($transaction->product_id)
+                ->increment('quantity', $transaction->quantity);
 
-            $product->increment('quantity', $stockOut->quantity);
-
-            $stockOut->delete();
+            $transaction->delete();
         });
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Stock-out deleted successfully',
-        ]);
+        return response()->json(['status'=>'success','message'=>'Stock-out deleted successfully']);
     }
 }

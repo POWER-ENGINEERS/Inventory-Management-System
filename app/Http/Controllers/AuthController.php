@@ -11,19 +11,27 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $validated = $request->validate([
-            'email' => 'required|email',
+            'identifier' => 'required|string',
             'password' => 'required|string',
+            'role' => 'required|in:Super Admin,Administrator,Cashier,Warehouse Staff',
         ]);
 
-        $user = User::where('email', $validated['email'])->first();
+        $user = User::query()
+            ->where(function ($query) use ($validated) {
+                $query->where('username', $validated['identifier'])
+                    ->orWhere('email', $validated['identifier']);
+            })
+            ->where('role', $validated['role'])
+            ->where('status', 'Active')
+            ->first();
 
         if (!$user || !Hash::check($validated['password'], $user->password)) {
             return response()->json([
-                'message' => 'Invalid email or password.'
+                'message' => 'Invalid username/email, password, or account type.'
             ], 401);
         }
 
-        $token = $user->createToken('inventory-api-token')->plainTextToken;
+        $token = $user->createToken('inventory-web')->plainTextToken;
 
         return response()->json([
             'message' => 'Login successful',
@@ -34,7 +42,11 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $token = $request->user()->currentAccessToken();
+
+        if ($token) {
+            $token->delete();
+        }
 
         return response()->json([
             'message' => 'Logout successful'

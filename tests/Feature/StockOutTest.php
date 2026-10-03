@@ -9,7 +9,8 @@ use App\Models\InventoryTransaction;
 uses(RefreshDatabase::class);
 
 test('stock-outs endpoint returns successful response', function () {
-    $response = $this->getJson('/api/stock-outs');
+    $response = $this->withToken(authToken())
+        ->getJson('/api/stock-outs');
 
     $response->assertStatus(200);
 });
@@ -39,9 +40,8 @@ test('stock-out details can be retrieved successfully', function () {
         'transaction_date' => now(),
     ]);
 
-    $response = $this->getJson(
-        '/api/stock-outs/' . $stockOut->transaction_id
-    );
+    $response = $this->withToken(authToken())
+        ->getJson('/api/stock-outs/' . $stockOut->transaction_id);
 
     $response->assertStatus(200)
         ->assertJson([
@@ -72,10 +72,11 @@ test('stock out can be created successfully', function () {
         'price' => 25000,
     ]);
 
-    $response = $this->postJson('/api/stock-outs', [
-        'product_id' => $product->product_id,
-        'quantity' => 5,
-    ]);
+    $response = $this->withToken(authToken())
+        ->postJson('/api/stock-outs', [
+            'product_id' => $product->product_id,
+            'quantity' => 5,
+        ]);
 
     $response->assertStatus(201)
         ->assertJson([
@@ -127,13 +128,11 @@ test('stock out can be updated successfully', function () {
         'transaction_date' => now(),
     ]);
 
-    $response = $this->putJson(
-        '/api/stock-outs/' . $stockOut->transaction_id,
-        [
+    $response = $this->withToken(authToken())
+        ->putJson('/api/stock-outs/' . $stockOut->transaction_id, [
             'product_id' => $product->product_id,
             'quantity' => 3,
-        ]
-    );
+        ]);
 
     $response->assertStatus(200)
         ->assertJson([
@@ -184,15 +183,14 @@ test('stock out can be deleted successfully', function () {
         'transaction_date' => now(),
     ]);
 
-    $response = $this->deleteJson(
-        '/api/stock-outs/' . $stockOut->transaction_id
-    );
+    $response = $this->withToken(authToken())
+        ->deleteJson('/api/stock-outs/' . $stockOut->transaction_id);
 
     $response->assertStatus(200)
-        ->assertJson([
-            'status' => 'success',
-            'message' => 'Stock-out deleted successfully',
-        ]);
+    ->assertJson([
+        'status' => 'success',
+        'message' => 'Stock-out deleted successfully',
+    ]);
 
     $this->assertDatabaseMissing('inventory_transactions', [
         'transaction_id' => $stockOut->transaction_id,
@@ -205,7 +203,8 @@ test('stock out can be deleted successfully', function () {
 });
 
 test('stock out fails when required fields are missing', function () {
-    $response = $this->postJson('/api/stock-outs', []);
+    $response = $this->withToken(authToken())
+        ->postJson('/api/stock-outs', []);
 
     $response->assertStatus(422)
         ->assertJsonValidationErrors([
@@ -215,10 +214,11 @@ test('stock out fails when required fields are missing', function () {
 });
 
 test('stock out fails when product does not exist', function () {
-    $response = $this->postJson('/api/stock-outs', [
-        'product_id' => 99999,
-        'quantity' => 5,
-    ]);
+    $response = $this->withToken(authToken())
+        ->postJson('/api/stock-outs', [
+            'product_id' => 99999,
+            'quantity' => 5,
+        ]);
 
     $response->assertStatus(422)
         ->assertJsonValidationErrors([
@@ -244,17 +244,18 @@ test('stock out fails when requested quantity exceeds available stock', function
         'price' => 25000,
     ]);
 
-    $response = $this->postJson('/api/stock-outs', [
-        'product_id' => $product->product_id,
-        'quantity' => 10,
-    ]);
-
-    $response->assertStatus(422)
-        ->assertJson([
-            'status' => 'error',
-            'error' => 'Insufficient stock',
-            'field' => 'quantity',
+    $response = $this->withToken(authToken())
+        ->postJson('/api/stock-outs', [
+            'product_id' => $product->product_id,
+            'quantity' => 10,
         ]);
+
+   $response->assertStatus(422)
+    ->assertJson([
+        'status' => 'error',
+        'error' => 'Insufficient stock.',
+        'field' => 'quantity',
+    ]);
 
     $this->assertDatabaseHas('products', [
         'product_id' => $product->product_id,
@@ -280,10 +281,11 @@ test('stock out fails when quantity is zero', function () {
         'price' => 25000,
     ]);
 
-    $response = $this->postJson('/api/stock-outs', [
-        'product_id' => $product->product_id,
-        'quantity' => 0,
-    ]);
+    $response = $this->withToken(authToken())
+        ->postJson('/api/stock-outs', [
+            'product_id' => $product->product_id,
+            'quantity' => 0,
+        ]);
 
     $response->assertStatus(422)
         ->assertJsonValidationErrors([
