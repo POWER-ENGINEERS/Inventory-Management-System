@@ -144,38 +144,72 @@
         return `${dateStr} ${timeStr}`;
     }
 
-    // Initialize Database
-    function initDatabase() {
-        const stored = (localStorage.getItem("dabugss_db") || localStorage.getItem("apexstock_db"));
-        if (stored) {
-            try {
-                db = JSON.parse(stored);
-                // Backwards compatibility / data integrity checks
-                if (!db.settings) db.settings = { ...DEFAULT_COMPANY };
-                else if (db.settings.currency === "$") db.settings.currency = "₱"; // migration to PHP peso
-                if (!db.products) db.products = [...SEED_DATA.products];
-                if (!db.categories) db.categories = [...SEED_DATA.categories];
-                if (!db.brands) db.brands = [...SEED_DATA.brands];
-                if (!db.suppliers) db.suppliers = [...SEED_DATA.suppliers];
-                if (!db.customers) db.customers = [...SEED_DATA.customers];
-                if (!db.purchaseOrders) db.purchaseOrders = [...SEED_DATA.purchaseOrders];
-                if (!db.sales) db.sales = [...SEED_DATA.sales];
-                if (!db.inventoryHistory) db.inventoryHistory = [...SEED_DATA.inventoryHistory];
-                if (!db.auditTrail) db.auditTrail = [...SEED_DATA.auditTrail];
-            } catch (e) {
-                db = { ...SEED_DATA, settings: { ...DEFAULT_COMPANY } };
-                saveDatabase();
-            }
-        } else {
-            db = { ...SEED_DATA, settings: { ...DEFAULT_COMPANY } };
-            saveDatabase();
-        }
+    // Initialize in-memory UI state only. Persistent application data lives in Laravel.
+    function cloneSeedData() {
+        return JSON.parse(JSON.stringify({
+            ...SEED_DATA,
+            settings: { ...DEFAULT_COMPANY }
+        }));
     }
 
+    function ensureDatabaseShape() {
+        if (!db || typeof db !== "object") db = cloneSeedData();
+        if (!db.settings) db.settings = { ...DEFAULT_COMPANY };
+        if (db.settings.currency === "$") db.settings.currency = "₱";
+        if (!Array.isArray(db.products)) db.products = [];
+        if (!Array.isArray(db.categories)) db.categories = [];
+        if (!Array.isArray(db.brands)) db.brands = [];
+        if (!Array.isArray(db.suppliers)) db.suppliers = [];
+        if (!Array.isArray(db.customers)) db.customers = [];
+        if (!Array.isArray(db.employees)) db.employees = [];
+        if (!Array.isArray(db.purchaseOrders)) db.purchaseOrders = [];
+        if (!Array.isArray(db.sales)) db.sales = [];
+        if (!Array.isArray(db.inventoryHistory)) db.inventoryHistory = [];
+        if (!Array.isArray(db.auditTrail)) db.auditTrail = [];
+    }
+
+    function initDatabase() {
+        db = cloneSeedData();
+        ensureDatabaseShape();
+    }
+
+    let saveDatabaseInFlight = Promise.resolve();
+
     function saveDatabase() {
-        // Laravel is the source of truth for products, suppliers, and categories.
-        // localStorage remains only as a fallback/cache for modules not yet migrated.
-        localStorage.setItem("dabugss_db", JSON.stringify(db));
+        const token = localStorage.getItem(AUTH_TOKEN_KEY);
+        if (!token) return Promise.resolve();
+
+        const snapshot = JSON.parse(JSON.stringify(db));
+        saveDatabaseInFlight = saveDatabaseInFlight
+            .catch(() => {})
+            .then(() => apiRequest("/app-state", {
+                method: "PUT",
+                body: JSON.stringify({ data: snapshot })
+            }))
+            .catch(error => {
+                console.error("Laravel application state save failed:", error);
+            });
+
+        return saveDatabaseInFlight;
+    }
+
+    async function loadBackendState() {
+        const response = await apiRequest("/app-state");
+
+        if (response?.data) {
+            db = response.data;
+            ensureDatabaseShape();
+        } else {
+            db = cloneSeedData();
+            ensureDatabaseShape();
+            await saveDatabase();
+        }
+
+        populateDropdowns();
+
+        if (typeof loadEmployeesFromLaravel === "function" && currentUser?.role === "Super Admin") {
+            await loadEmployeesFromLaravel();
+        }
     }
 
     // --------------------------------------------------------------------------
@@ -286,7 +320,7 @@
             if (activeView === "suppliers") renderSuppliersTable();
         } catch (error) {
             console.error("Laravel catalog sync failed:", error);
-            showToast("Laravel API unavailable", "The frontend is using its local fallback data. Start Laravel and try again.", "warning");
+            showToast("Laravel API unavailable", "Unable to load catalog data from Laravel. Check that the Laravel server is running.", "warning");
         }
     }
 
@@ -863,30 +897,33 @@ function showToast(title, message, type = "info") {
         }
     });
 
-    function completeLogin(user, token = null, options = {}) {
+    async function completeLogin(user, token = null, options = {}) {
         currentUser = user;
         setAuthSession(user, token || localStorage.getItem(AUTH_TOKEN_KEY));
         showAppShell();
-
         applyRolePermissions();
+
+        try {
+            await loadBackendState();
+            await syncBackendCatalog();
+        } catch (error) {
+            console.error("Unable to load Laravel application state:", error);
+            showToast("Backend Load Failed", error.message || "Could not load application data from Laravel.", "danger");
+        }
 
         if (!options.restore) {
             logAudit("Login", `User ${user.username} logged in successfully`);
             showToast("Signed In", `Logged in as ${user.name} (${user.role})`, "success");
         }
 
-        // Start background synchronization without changing the authenticated UI.
-        syncBackendCatalog();
-
         if (user.role === "Super Admin") {
-            loadUserAccounts();
+            await loadUserAccounts();
+            await loadEmployeesFromLaravel();
         }
 
         if (user.role === "Cashier") {
             switchView("sales");
-        } else if (activeView === "dashboard") {
-            // Only choose the dashboard automatically when no other view
-            // has already been selected by the user.
+        } else {
             switchView("dashboard");
         }
 
@@ -2908,30 +2945,16 @@ function showToast(title, message, type = "info") {
             "WAREHOUSE": "Warehouse Staff",
             "WAREHOUSE STAFF": "Warehouse Staff"
         };
-
         const raw = String(position || "").trim();
         return roleMap[raw.toUpperCase()] || raw;
     }
 
     async function loadEmployeesFromLaravel() {
         const tbody = document.getElementById("employees-table-body");
-        if (!tbody) return;
-
-        if (!currentUser || currentUser.role !== "Super Admin") {
-            employeeAccounts = [];
-            renderEmployeesTable([]);
-            return;
-        }
-
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="7" class="text-center text-muted">Loading employee accounts...</td>
-            </tr>
-        `;
+        if (!tbody || !currentUser || currentUser.role !== "Super Admin") return;
 
         try {
             const response = await apiRequest("/auth/users");
-
             employeeAccounts = (response.users || [])
                 .filter(user => user.role !== "Super Admin")
                 .map(user => ({
@@ -2940,6 +2963,7 @@ function showToast(title, message, type = "info") {
                     position: user.role || "",
                     username: user.username || "",
                     email: user.email || "",
+                    phone: user.phone || "",
                     status: user.status || "Active"
                 }));
 
@@ -2982,27 +3006,25 @@ function showToast(title, message, type = "info") {
         clearFormErrors(form);
 
         if (!currentUser || currentUser.role !== "Super Admin") {
-            showToast("Access Denied", "Only the Super Admin can create employee accounts.", "danger");
+            showToast("Access Denied", "Only the Super Admin can manage employee accounts.", "danger");
             return;
         }
 
+        const employeeId = document.getElementById("employee-id").value.trim();
         const name = document.getElementById("emp-name").value.trim();
         const position = document.getElementById("emp-position").value;
         const role = normalizeEmployeeRole(position);
         const username = document.getElementById("emp-username").value.trim().toLowerCase();
         const password = document.getElementById("emp-password").value;
+        const phone = document.getElementById("emp-phone").value.trim();
         const email = document.getElementById("emp-email").value.trim().toLowerCase();
 
-        if (!name || !username || !email || !role || !password) {
-            showToast(
-                "Missing Information",
-                "Please complete the employee name, username, email, role, and password.",
-                "warning"
-            );
+        if (!name || !username || !email || !role) {
+            showToast("Missing Information", "Please complete the employee name, username, email, and role.", "warning");
             return;
         }
 
-        if (password.length < 8) {
+        if (!employeeId && password.length < 8) {
             showToast("Invalid Password", "The employee password must contain at least 8 characters.", "warning");
             return;
         }
@@ -3010,45 +3032,46 @@ function showToast(title, message, type = "info") {
         setFormBusy(form, true);
 
         try {
-            await apiRequest("/auth/users", {
-                method: "POST",
-                body: JSON.stringify({
-                    name,
-                    username,
-                    email,
-                    password,
-                    password_confirmation: password,
-                    role
-                })
-            });
+            const payload = {
+                name,
+                username,
+                email,
+                phone,
+                role,
+                status: "Active"
+            };
+
+            if (password) {
+                payload.password = password;
+                payload.password_confirmation = password;
+            }
+
+            if (employeeId) {
+                await apiRequest(`/auth/users/${encodeURIComponent(employeeId)}`, {
+                    method: "PUT",
+                    body: JSON.stringify(payload)
+                });
+                showToast("Employee Updated", `${name}'s Laravel account was updated.`, "success");
+            } else {
+                await apiRequest("/auth/users", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        ...payload,
+                        password,
+                        password_confirmation: password
+                    })
+                });
+                showToast("Employee Account Created", `${name} can now log in using username "${username}".`, "success");
+            }
 
             closeModal("employee-modal");
-
-            logAudit(
-                "Settings",
-                `Registered employee login account: ${name} (${role})`
-            );
-
-            showToast(
-                "Employee Account Created",
-                `${name} can now log in using username "${username}" and the password you assigned.`,
-                "success"
-            );
-
+            logAudit("Settings", `${employeeId ? "Updated" : "Registered"} employee login account: ${name} (${role})`);
             await loadEmployeesFromLaravel();
             await loadUserAccounts();
         } catch (error) {
-            console.error("Employee account creation failed:", error);
-
-            if (error.errors) {
-                showFormErrors(form, error.errors);
-            }
-
-            showToast(
-                "Employee Account Failed",
-                error.message || "Laravel could not create the employee login account.",
-                "danger"
-            );
+            console.error("Employee account operation failed:", error);
+            if (error.errors) showFormErrors(form, error.errors);
+            showToast("Employee Account Failed", error.message || "Laravel could not save the employee account.", "danger");
         } finally {
             setFormBusy(form, false);
         }
@@ -3059,7 +3082,6 @@ function showToast(title, message, type = "info") {
         if (!tbody) return;
 
         const query = document.getElementById("employees-search").value.trim().toLowerCase();
-
         let filtered = employees || [];
 
         if (query) {
@@ -3067,7 +3089,8 @@ function showToast(title, message, type = "info") {
                 String(employee.name || "").toLowerCase().includes(query) ||
                 String(employee.position || "").toLowerCase().includes(query) ||
                 String(employee.username || "").toLowerCase().includes(query) ||
-                String(employee.email || "").toLowerCase().includes(query)
+                String(employee.email || "").toLowerCase().includes(query) ||
+                String(employee.phone || "").toLowerCase().includes(query)
             );
         }
 
@@ -3077,9 +3100,7 @@ function showToast(title, message, type = "info") {
             showEmptyState(
                 tbody,
                 "No employees found",
-                query
-                    ? "There are no employees matching your search."
-                    : "No employee accounts have been created yet."
+                query ? "There are no employees matching your search." : "No employee accounts have been created yet."
             );
             return;
         }
@@ -3091,12 +3112,50 @@ function showToast(title, message, type = "info") {
                 <td><span class="badge badge-info">${employee.position}</span></td>
                 <td class="font-mono">${employee.username}</td>
                 <td>${employee.email}</td>
+                <td>${employee.phone || '<span class="text-meta">N/A</span>'}</td>
                 <td><span class="badge badge-success">${employee.status || "Active"}</span></td>
                 <td class="text-right">
-                    <span class="text-muted text-meta">Laravel Account</span>
+                    <button class="btn btn-secondary btn-sm edit-employee-btn" data-id="${employee.id}" title="Edit employee"><i class="fa-solid fa-pen-to-square"></i></button>
+                    <button class="btn btn-danger btn-sm delete-employee-btn" data-id="${employee.id}" title="Delete employee"><i class="fa-solid fa-trash"></i></button>
                 </td>
             `;
             tbody.appendChild(tr);
+        });
+
+        tbody.querySelectorAll(".edit-employee-btn").forEach(btn => {
+            btn.addEventListener("click", function () {
+                const employee = employeeAccounts.find(item => String(item.id) === String(this.dataset.id));
+                if (!employee) return;
+
+                document.getElementById("employee-id").value = employee.id;
+                document.getElementById("employee-modal-title").textContent = "Edit Employee Account";
+                document.getElementById("emp-name").value = employee.name || "";
+                document.getElementById("emp-position").value = employee.position || "";
+                document.getElementById("emp-username").value = employee.username || "";
+                document.getElementById("emp-password").value = "";
+                document.getElementById("emp-phone").value = employee.phone || "";
+                document.getElementById("emp-email").value = employee.email || "";
+                clearFormErrors(document.getElementById("employee-form"));
+                openModal("employee-modal");
+            });
+        });
+
+        tbody.querySelectorAll(".delete-employee-btn").forEach(btn => {
+            btn.addEventListener("click", async function () {
+                const employee = employeeAccounts.find(item => String(item.id) === String(this.dataset.id));
+                if (!employee) return;
+
+                if (!confirm(`Delete the Laravel account for "${employee.name}"? This also removes the employee's login access.`)) return;
+
+                try {
+                    await apiRequest(`/auth/users/${encodeURIComponent(employee.id)}`, { method: "DELETE" });
+                    await loadEmployeesFromLaravel();
+                    await loadUserAccounts();
+                    showToast("Employee Deleted", "The Laravel employee account was deleted.", "success");
+                } catch (error) {
+                    showToast("Delete Failed", error.message || "Unable to delete the employee account.", "danger");
+                }
+            });
         });
     }
 
@@ -3706,8 +3765,7 @@ function showToast(title, message, type = "info") {
         localStorage.setItem("dabugss_theme", next);
     });
 
-    // Load theme from cache
-    const cachedTheme = (localStorage.getItem("dabugss_theme") || localStorage.getItem("apexstock_theme"));
+    const cachedTheme = localStorage.getItem("dabugss_theme");
     if (cachedTheme) {
         document.documentElement.setAttribute("data-theme", cachedTheme);
     }
@@ -3869,8 +3927,7 @@ function showToast(title, message, type = "info") {
             showLoginShell();
         }
 
-        // Catalog sync is safe after initialization. If the token is invalid,
-        // apiRequest reports the API error without forcing a logout.
-        syncBackendCatalog();
+        // Application data is loaded after authentication by completeLogin().
+        // No application database is read from localStorage.
     });
 })();
