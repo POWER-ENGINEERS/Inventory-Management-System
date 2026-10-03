@@ -200,9 +200,28 @@
             db = response.data;
             ensureDatabaseShape();
         } else {
-            db = cloneSeedData();
-            ensureDatabaseShape();
-            await saveDatabase();
+            // One-time migration for an older build that used localStorage as its database.
+            // The data is immediately uploaded to Laravel and then removed from localStorage.
+            const legacy = localStorage.getItem("dabugss_db") || localStorage.getItem("apexstock_db");
+
+            if (legacy) {
+                try {
+                    db = JSON.parse(legacy);
+                    ensureDatabaseShape();
+                    await saveDatabase();
+                    localStorage.removeItem("dabugss_db");
+                    localStorage.removeItem("apexstock_db");
+                } catch (error) {
+                    console.warn("Legacy local database migration failed:", error);
+                    db = cloneSeedData();
+                    ensureDatabaseShape();
+                    await saveDatabase();
+                }
+            } else {
+                db = cloneSeedData();
+                ensureDatabaseShape();
+                await saveDatabase();
+            }
         }
 
         populateDropdowns();
