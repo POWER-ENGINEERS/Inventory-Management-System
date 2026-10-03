@@ -1646,7 +1646,7 @@ function showToast(title, message, type = "info") {
             });
         });
         catBody.querySelectorAll(".delete-cat-btn").forEach(btn => {
-            btn.addEventListener("click", function () {
+            btn.addEventListener("click", async function () {
                 const id = this.getAttribute("data-id");
                 if (confirm("Delete Category? Any product linked to this category will display N/A.")) {
                     db.categories = db.categories.filter(c => c.id !== id);
