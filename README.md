@@ -120,14 +120,6 @@ Generate reports for business decisions.
 |-------------|----------|
 | ![](docs/wireframes/Audit%20Trail.png) | ![](docs/wireframes/Settings.png) |
   
-### DATABASE
-The application currently uses an offline-first Browser localStorage Database Engine:
-
-📊 How It Works
-Storage Layer: All system records (Products, Categories, Suppliers, Purchase Orders, Stock Movements, Sales, Customers, Employees, Audit Trail, and Settings) are stored as structured JSON in the browser's localStorage.
-Persistence: Your data automatically persists across browser refreshes, tab closes, and computer restarts without requiring an external database server to be installed.
-Backup & Restore: Under Settings -> Backup Database, you can export your entire database as a .json file anytime and restore/import it onto any computer.
-
 
 🚀 Future Improvements
 Barcode Scanner
