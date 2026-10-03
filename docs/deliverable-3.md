@@ -136,3 +136,12 @@ The automated suite was also executed locally:
 - 1.57 seconds
 
 Together, the automated test result and the submitted browser screenshots provide the current Deliverable 3 verification evidence.
+
+
+### Additional Manual Verification — Login Required-Field Validation
+
+A browser screenshot also captured the login form with the username/email field left empty while attempting to submit. The browser displayed the required-field message **"Please fill out this field."**
+
+**Result: PASS — Login required-field validation**
+
+This confirms the login form prevents submission when the required username/email field is empty and provides visible user feedback.
