@@ -152,3 +152,40 @@ php artisan test
 
 ```
 php artisan test is a Laravel command that runs all automated tests in the project to verify that the application's features work correctly and that changes have not introduced errors.
+
+
+## Local Laravel Run Instructions
+
+Deliverable 3 uses the Laravel application as the backend for the bound catalog features.
+
+### 1. Install dependencies
+```bash
+composer install
+```
+
+### 2. Configure the environment
+Create or update `.env` with the local MySQL database settings, then run:
+```bash
+php artisan key:generate
+```
+
+### 3. Run migrations
+```bash
+php artisan migrate
+```
+
+### 4. Start Laravel
+```bash
+php artisan serve
+```
+
+Open:
+`http://127.0.0.1:8000`
+
+### 5. Run automated tests
+```bash
+php artisan test
+```
+
+### 6. Deliverable 3 verification
+With Laravel running, verify Product, Supplier, and Category create/update/delete flows where applicable. Also check loading feedback, validation errors, not-found handling, server/network feedback, and confirmation behavior. See `docs/feedback-tests.md`.

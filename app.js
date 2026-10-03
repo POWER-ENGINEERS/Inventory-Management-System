@@ -218,23 +218,55 @@
 
     async function apiRequest(path, options = {}) {
         const token = localStorage.getItem(AUTH_TOKEN_KEY);
-        const response = await fetch(API_BASE_URL + path, {
-            ...options,
-            headers: {
-                "Accept": "application/json",
-                ...(token ? { "Authorization": `Bearer ${token}` } : {}),
-                ...(options.body ? { "Content-Type": "application/json" } : {}),
-                ...(options.headers || {})
-            }
-        });
+
+        let response;
+
+        try {
+            response = await fetch(API_BASE_URL + path, {
+                ...options,
+                headers: {
+                    "Accept": "application/json",
+                    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+                    ...(options.body ? { "Content-Type": "application/json" } : {}),
+                    ...(options.headers || {})
+                }
+            });
+        } catch (_) {
+            const error = new Error(
+                "We couldn't connect to the Laravel server. Please check the connection and try again."
+            );
+            error.status = 0;
+            error.code = "NETWORK_ERROR";
+            error.errors = {};
+            throw error;
+        }
+
         let payload = null;
-        try { payload = await response.json(); } catch (_) {}
+        try {
+            payload = await response.json();
+        } catch (_) {}
+
         if (!response.ok) {
-            const error = new Error(payload?.message || payload?.error || "The Laravel API request failed.");
+            let message = payload?.message || payload?.error;
+
+            if (response.status === 404) {
+                message = message || "The requested record was not found. Refresh the page and try again.";
+            } else if (response.status >= 500) {
+                message = "Something went wrong on the server. Please try again.";
+            } else if (response.status === 422) {
+                message = message || "Please correct the highlighted fields and try again.";
+            } else if (response.status === 401) {
+                message = "Your session is no longer valid. Please sign in again.";
+            } else {
+                message = message || "The request could not be completed. Please try again.";
+            }
+
+            const error = new Error(message);
             error.status = response.status;
             error.errors = payload?.errors || {};
             throw error;
         }
+
         return payload;
     }
 
@@ -278,21 +310,68 @@
     }
 
     async function syncBackendCatalog() {
+        const productsBody = document.getElementById("products-table-body");
+        const suppliersBody = document.getElementById("suppliers-table-body");
+
+        if (productsBody) {
+            showTableLoadingState(
+                productsBody,
+                "Loading products...",
+                "Fetching the latest product records from Laravel."
+            );
+        }
+
+        if (suppliersBody) {
+            showTableLoadingState(
+                suppliersBody,
+                "Loading suppliers...",
+                "Fetching the latest supplier records from Laravel."
+            );
+        }
+
         try {
             const [productsResponse, suppliersResponse, categoriesResponse] = await Promise.all([
                 apiRequest("/products"),
                 apiRequest("/suppliers"),
                 apiRequest("/categories")
             ]);
+
             db.products = (productsResponse?.data || []).map(mapBackendProduct);
             db.suppliers = (suppliersResponse?.data || []).map(mapBackendSupplier);
             db.categories = (categoriesResponse?.data || []).map(mapBackendCategory);
+
             populateDropdowns();
-            if (activeView === "products") renderProductsTable();
-            if (activeView === "suppliers") renderSuppliersTable();
+            renderProductsTable();
+            renderSuppliersTable();
         } catch (error) {
             console.error("Laravel catalog sync failed:", error);
-            showToast("Laravel API unavailable", "The frontend is using its local fallback data. Start Laravel and try again.", "warning");
+
+            const message = error.message ||
+                "We couldn't load the latest catalog. Please try again.";
+
+            if (productsBody) {
+                showTableErrorState(
+                    productsBody,
+                    error.status === 404 ? "Products not found" : "Unable to load products",
+                    message,
+                    syncBackendCatalog
+                );
+            }
+
+            if (suppliersBody) {
+                showTableErrorState(
+                    suppliersBody,
+                    error.status === 404 ? "Suppliers not found" : "Unable to load suppliers",
+                    message,
+                    syncBackendCatalog
+                );
+            }
+
+            showToast(
+                error.status === 0 ? "Connection Failed" : "Catalog Load Failed",
+                message,
+                "danger"
+            );
         }
     }
 
@@ -605,6 +684,70 @@ function showErrorState(
     }
 
     container.appendChild(state);
+}
+
+function showTableLoadingState(
+    tbody,
+    title = "Loading...",
+    message = "Please wait while the latest records are being loaded."
+) {
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+
+    const state = createUIState(
+        "loading-state-template",
+        title,
+        message
+    );
+
+    if (!state) return;
+
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    const columnCount =
+        tbody.closest("table")?.querySelectorAll("thead th").length || 1;
+
+    cell.colSpan = columnCount;
+    cell.className = "text-center ui-state-table-cell";
+    cell.appendChild(state);
+    row.appendChild(cell);
+    tbody.appendChild(row);
+}
+
+function showTableErrorState(
+    tbody,
+    title,
+    message,
+    retryCallback
+) {
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+
+    const state = createUIState(
+        "error-state-template",
+        title,
+        message
+    );
+
+    if (!state) return;
+
+    const retryButton = state.querySelector(".ui-state-retry");
+    if (retryButton && typeof retryCallback === "function") {
+        retryButton.addEventListener("click", retryCallback);
+    }
+
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    const columnCount =
+        tbody.closest("table")?.querySelectorAll("thead th").length || 1;
+
+    cell.colSpan = columnCount;
+    cell.className = "text-center ui-state-table-cell";
+    cell.appendChild(state);
+    row.appendChild(cell);
+    tbody.appendChild(row);
 }
 
 // =========================================
@@ -1274,8 +1417,12 @@ function showToast(title, message, type = "info") {
             if (error.status === 422) {
                 showFormErrors(form, error.errors);
                 showToast("Validation Error", "Please correct the highlighted fields.", "warning");
+            } else if (error.status === 404) {
+                showToast("Product Not Found", "The product record could not be found. Refresh the list and try again.", "warning");
+            } else if (error.status === 0) {
+                showToast("Connection Failed", error.message, "danger");
             } else {
-                showToast("Save Failed", error.message || "Could not save the product to Laravel.", "danger");
+                showToast("Save Failed", error.message || "Something went wrong while saving the product. Please try again.", "danger");
             }
         } finally {
             setFormBusy(form, false);
@@ -1585,10 +1732,22 @@ function showToast(title, message, type = "info") {
                 error.message || "Please check the category information.",
                 "warning"
             );
+        } else if (error.status === 404) {
+            showToast(
+                "Category Not Found",
+                "The category record could not be found. Refresh the list and try again.",
+                "warning"
+            );
+        } else if (error.status === 0) {
+            showToast(
+                "Connection Failed",
+                error.message,
+                "danger"
+            );
         } else {
             showToast(
                 "Save Failed",
-                error.message || "Could not save the category.",
+                error.message || "Something went wrong while saving the category. Please try again.",
                 "danger"
             );
         }
@@ -1715,11 +1874,31 @@ function showToast(title, message, type = "info") {
         } catch (error) {
             console.error("Category delete failed:", error);
 
-            showToast(
-                "Delete Failed",
-                error.message || "Could not delete the category.",
-                "danger"
-            );
+            if (error.status === 404) {
+                showToast(
+                    "Category Not Found",
+                    "That category no longer exists. Refresh the category list and try again.",
+                    "warning"
+                );
+            } else if (error.status === 409) {
+                showToast(
+                    "Category Cannot Be Deleted",
+                    error.message || "Remove linked products before deleting this category.",
+                    "warning"
+                );
+            } else if (error.status === 0) {
+                showToast(
+                    "Connection Failed",
+                    error.message,
+                    "danger"
+                );
+            } else {
+                showToast(
+                    "Delete Failed",
+                    error.message || "Something went wrong while deleting the category. Please try again.",
+                    "danger"
+                );
+            }
         }
     });
 });
@@ -1798,8 +1977,12 @@ function showToast(title, message, type = "info") {
             if (error.status === 422) {
                 showFormErrors(form, error.errors);
                 showToast("Validation Error", "Please correct the highlighted fields.", "warning");
+            } else if (error.status === 404) {
+                showToast("Supplier Not Found", "The supplier record could not be found. Refresh the list and try again.", "warning");
+            } else if (error.status === 0) {
+                showToast("Connection Failed", error.message, "danger");
             } else {
-                showToast("Save Failed", error.message || "Could not save the supplier to Laravel.", "danger");
+                showToast("Save Failed", error.message || "Something went wrong while saving the supplier. Please try again.", "danger");
             }
         } finally {
             setFormBusy(form, false);
