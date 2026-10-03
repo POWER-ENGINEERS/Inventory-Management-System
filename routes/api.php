@@ -11,6 +11,7 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\StockInController;
 use App\Http\Controllers\StockOutController;
+use App\Http\Controllers\AppStateController;
 
 Route::post('/auth/login', [AuthController::class, 'login']);
 
@@ -19,6 +20,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/auth/users', [AccountController::class, 'index']);
     Route::post('/auth/users', [AccountController::class, 'store']);
+    Route::put('/auth/users/{user}', [AccountController::class, 'update']);
+    Route::delete('/auth/users/{user}', [AccountController::class, 'destroy']);
+
+    Route::get('/app-state', [AppStateController::class, 'show']);
+    Route::put('/app-state', [AppStateController::class, 'store']);
 
     Route::get('/categories', [CategoryController::class, 'listCategories']);
     Route::post('/categories', [CategoryController::class, 'createCategory']);
