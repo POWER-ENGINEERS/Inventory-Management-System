@@ -156,6 +156,51 @@ test('frontend-shaped supplier payload can be created and updated', function () 
     ]);
 });
 
+test('frontend-shaped category payload can be created and updated', function () {
+    $token = week7AuthToken();
+
+    $create = $this->withToken($token)
+        ->postJson('/api/categories', [
+            'category_name' => 'Frontend Category',
+            'description' => 'Created from the Week 7 category form',
+        ]);
+
+    $create->assertStatus(201)
+        ->assertJsonPath('data.category_name', 'Frontend Category')
+        ->assertJsonPath('data.description', 'Created from the Week 7 category form');
+
+    $id = $create->json('data.category_id');
+
+    $update = $this->withToken($token)
+        ->putJson('/api/categories/' . $id, [
+            'category_name' => 'Updated Frontend Category',
+            'description' => 'Updated through the Week 7 category form',
+        ]);
+
+    $update->assertStatus(200)
+        ->assertJsonPath('data.category_name', 'Updated Frontend Category')
+        ->assertJsonPath('data.description', 'Updated through the Week 7 category form');
+
+    $this->assertDatabaseHas('categories', [
+        'category_id' => $id,
+        'category_name' => 'Updated Frontend Category',
+    ]);
+});
+
+test('invalid frontend supplier data returns validation errors', function () {
+    $response = $this->withToken(week7AuthToken())
+        ->postJson('/api/suppliers', [
+            'supplier_name' => '',
+            'email' => 'not-an-email',
+        ]);
+
+    $response->assertStatus(422)
+        ->assertJsonValidationErrors([
+            'supplier_name',
+            'email',
+        ]);
+});
+
 test('invalid frontend product data returns validation errors', function () {
     $response = $this->withToken(week7AuthToken())
         ->postJson('/api/products', [
