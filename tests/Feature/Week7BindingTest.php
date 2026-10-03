@@ -2,9 +2,19 @@
 
 use App\Models\Category;
 use App\Models\Supplier;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
+
+function week7AuthToken(): string
+{
+    return User::factory()->create([
+        'username' => 'week7-superadmin',
+        'role' => 'Super Admin',
+        'status' => 'Active',
+    ])->createToken('week7-tests')->plainTextToken;
+}
 
 test('frontend-shaped product payload can be created through Laravel', function () {
     $category = Category::create([
@@ -21,7 +31,7 @@ test('frontend-shaped product payload can be created through Laravel', function 
         'address' => 'Davao City',
     ]);
 
-    $response = $this->postJson('/api/products', [
+    $response = $this->withToken(week7AuthToken())->postJson('/api/products', [
         'product_name' => 'Frontend Product',
         'sku' => 'WEB-001',
         'barcode' => '480000000001',
@@ -68,7 +78,7 @@ test('frontend-shaped product update persists to Laravel', function () {
         'price' => 100,
     ]);
 
-    $response = $this->putJson('/api/products/' . $product->product_id, [
+    $response = $this->withToken(week7AuthToken())->putJson('/api/products/' . $product->product_id, [
         'product_name' => 'Updated Frontend Product',
         'sku' => 'WEB-002',
         'category_id' => $category->category_id,
@@ -94,7 +104,7 @@ test('frontend-shaped product update persists to Laravel', function () {
 });
 
 test('frontend-shaped supplier payload can be created and updated', function () {
-    $create = $this->postJson('/api/suppliers', [
+    $create = $this->withToken(week7AuthToken())->postJson('/api/suppliers', [
         'supplier_name' => 'Frontend Supplier',
         'contact_person' => 'John Doe',
         'contact_number' => '09123456789',
@@ -110,7 +120,7 @@ test('frontend-shaped supplier payload can be created and updated', function () 
 
     $id = $create->json('data.supplier_id');
 
-    $update = $this->putJson('/api/suppliers/' . $id, [
+    $update = $this->withToken(week7AuthToken())->putJson('/api/suppliers/' . $id, [
         'supplier_name' => 'Updated Frontend Supplier',
         'contact_person' => 'Jane Doe',
         'contact_number' => '09999999999',
@@ -132,7 +142,7 @@ test('frontend-shaped supplier payload can be created and updated', function () 
 });
 
 test('invalid frontend product data returns validation errors', function () {
-    $response = $this->postJson('/api/products', [
+    $response = $this->withToken(week7AuthToken())->postJson('/api/products', [
         'product_name' => '',
         'category_id' => 999999,
         'supplier_id' => 999999,
