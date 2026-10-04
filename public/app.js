@@ -187,8 +187,7 @@
     // --------------------------------------------------------------------------
     // Week 7: Laravel API data layer
     // --------------------------------------------------------------------------
-    const API_BASE_URL = window.INVENTORY_API_BASE_URL ||
-        (window.location.port === "8000" ? "/api" : "http://127.0.0.1:8000/api");
+    const API_BASE_URL = window.INVENTORY_API_BASE_URL || "/api";
     const AUTH_TOKEN_KEY = "inventory_auth_token";
     const AUTH_USER_KEY = "inventory_auth_user";
 
