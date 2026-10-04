@@ -187,7 +187,14 @@
     // --------------------------------------------------------------------------
     // Week 7: Laravel API data layer
     // --------------------------------------------------------------------------
-    const API_BASE_URL = window.INVENTORY_API_BASE_URL || "/api";
+    const API_BASE_URL =
+    window.INVENTORY_API_BASE_URL ||
+    (
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1"
+            ? "http://127.0.0.1:8000/api"
+            : "/api"
+    );
     const AUTH_TOKEN_KEY = "inventory_auth_token";
     const AUTH_USER_KEY = "inventory_auth_user";
 
@@ -3970,6 +3977,9 @@ function showToast(title, message, type = "info") {
 
         // Catalog sync is safe after initialization. If the token is invalid,
         // apiRequest reports the API error without forcing a logout.
-        syncBackendCatalog();
+        // Sync catalog only when a user is already authenticated.
+        if (token && storedUser) {
+            syncBackendCatalog();
+       }
     });
 })();
