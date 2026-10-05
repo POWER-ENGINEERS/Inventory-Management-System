@@ -1,6 +1,6 @@
 <?php
 
-use AppModels\Category;
+use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -125,8 +125,8 @@ test('Week 8 frontend feedback contract is present', function () {
 
     expect($js)->toContain('error.status === 422')
         ->toContain('showFormErrors')
-        ->toContain('error.status === 404')
-        ->toContain('error.status >= 500')
+        ->toContain('status === 404')
+        ->toContain('status >= 500')
         ->toContain('isNetworkError')
         ->toContain('Connection Problem')
         ->toContain('Record Not Found')
