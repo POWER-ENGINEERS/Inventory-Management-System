@@ -18,3 +18,17 @@ Use AI assistance for a small, reviewable fix while keeping the implementation s
 - [ ] Run the full test suite.
 - [ ] Review the PR for correctness, readability, consistency, security, and tests.
 - [ ] Obtain one approving peer review before merge.
+
+
+## Eric — Additional AI-Assisted PR
+
+### Prompt
+> Review the existing inventory validation feedback helper and propose a small, low-risk improvement that makes field-level validation errors more accessible without changing the existing UI or Laravel response handling. Include a focused automated test.
+
+### Result
+AI-assisted implementation added:
+- `aria-invalid="true"` to fields that have Laravel validation errors;
+- `role="alert"` to field-level validation messages;
+- removal of `aria-invalid` when validation feedback is cleared.
+
+The implementation was reviewed before being committed to the Week 9 branch.
