@@ -64,8 +64,12 @@
 
 **Expected:** Cancel prevents deletion; confirmation continues the delete request.
 
-## Verification Result
+## Automated Verification Result
 
-**Week 8 implementation prepared for manual failure-path verification.**
+**PASS — Week 8 automated coverage added in `tests/Feature/Week8FeedbackTest.php`.**
 
-The branch should be tested before its pull request is merged.
+The automated suite covers Laravel 422/404/409 response contracts and checks that the frontend contains the required Week 8 feedback handlers.
+
+## Manual Verification Result
+
+**REQUIRES BROWSER EXECUTION.** The Week 8 handout requires deliberately exercising failure paths in the running application. Do not mark those browser scenarios PASS until they are directly observed.
