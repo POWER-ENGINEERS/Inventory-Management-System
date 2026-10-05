@@ -23,3 +23,14 @@
 
 ## AI-use rule
 AI suggestions are reviewed before adoption. AI output is not treated as evidence that a test, deployment, or bug fix occurred.
+
+
+## Eric — Release Documentation Prompt
+
+### Prompt used
+> Review the existing Week 11 deployment notes and prepare a release-readiness contribution for the Laravel inventory system. Document the Railway public URL, production environment variables without secrets, migration and seed status, and clearly separate directly verified live checks from checks that still require browser execution. Do not invent bug fixes or claim unverified smoke tests as passing.
+
+### Human review
+- Production credentials remain outside the repository.
+- Live CRUD and 422 checks remain pending until directly observed.
+- No P0/P1 bug is claimed fixed without a confirmed Week 10 defect and regression evidence.
