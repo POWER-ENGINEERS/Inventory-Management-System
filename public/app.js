@@ -501,6 +501,7 @@
             supplier_name: "supp-company", contact_person: "supp-contact",
             contact_number: "supp-phone", phone: "supp-phone", email: "supp-email",
             address: "supp-address",
+            category_name: "cat-name", description: "cat-desc",
             name: "emp-name", username: "emp-username", password: "emp-password",
             password_confirmation: "emp-password", role: "emp-position"
         };
@@ -679,9 +680,7 @@ function showLoadingState(
         message
     );
 
-    if (state) {
-        container.appendChild(state);
-    }
+    appendUIState(container, state);
 }
 
 function appendUIState(container, state) {
@@ -1737,9 +1736,10 @@ function showToast(
         console.error("Category save failed:", error);
 
         if (error.status === 422) {
+            showFormErrors(form, error.errors);
             showToast(
                 "Validation Error",
-                error.message || "Please check the category information.",
+                "Please correct the highlighted category fields.",
                 "warning"
             );
         } else {
