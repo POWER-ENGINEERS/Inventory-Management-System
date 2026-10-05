@@ -18,3 +18,12 @@ The Week 12 handout explicitly states that AI is off for the oral defense. This 
 ## Human responsibility
 
 Each member must understand and explain their own code independently during the actual defense.
+
+
+## Eric — Final Demo Preparation Prompt
+
+### Prompt used
+> Review the Week 12 requirements for the inventory-management project and draft a concise rehearsal checklist covering the problem, solution, architecture/request flow, deployed live demo, graceful validation failure, backup demo, lessons learned, and individual defense preparation. Do not provide assistance during the actual oral defense.
+
+### Human review
+The checklist is preparation material only. The actual oral defense remains individual and unassisted.
