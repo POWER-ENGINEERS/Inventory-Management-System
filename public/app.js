@@ -487,7 +487,10 @@
     function clearFormErrors(form) {
         if (!form) return;
         form.querySelectorAll(".week7-field-error").forEach(el => el.remove());
-        form.querySelectorAll(".week7-field-invalid").forEach(el => el.classList.remove("week7-field-invalid"));
+        form.querySelectorAll(".week7-field-invalid").forEach(el => {
+            el.classList.remove("week7-field-invalid");
+            el.removeAttribute("aria-invalid");
+        });
     }
 
     function showFormErrors(form, errors) {
@@ -509,8 +512,11 @@
             const input = document.getElementById(fieldMap[field] || field);
             if (!input) return;
             input.classList.add("week7-field-invalid");
+            input.setAttribute("aria-invalid", "true");
+
             const error = document.createElement("div");
             error.className = "week7-field-error";
+            error.setAttribute("role", "alert");
             error.textContent = Array.isArray(messages) ? messages[0] : String(messages);
             input.insertAdjacentElement("afterend", error);
         });
