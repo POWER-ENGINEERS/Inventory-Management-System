@@ -28,6 +28,7 @@ jobs:
       - name: Run Laravel test suite
         env:
           APP_ENV: testing
+          APP_KEY: "base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
           DB_CONNECTION: sqlite
           DB_DATABASE: ":memory:"
         run: php artisan test
