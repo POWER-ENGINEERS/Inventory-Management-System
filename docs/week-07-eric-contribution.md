@@ -22,3 +22,12 @@ The following still require direct execution before they can be marked PASS:
 
 ## Verification rule
 Only scenarios actually executed and observed should be marked PASS. This document is evidence of the work observed so far, not a claim that every Week 7 manual check is complete.
+
+
+## Additional screenshot evidence — 2026-10-05
+- Supplier Create form: the Add Supplier Company form was opened and required supplier fields were filled before Save Supplier.
+- Supplier list: the supplier table visibly contained a `POWER` supplier record with contact information and address.
+- Supplier Update form: the Edit Supplier Company form opened with existing supplier values pre-filled.
+- Client-side required-field validation: Supplier and Product forms displayed the browser's `Please fill out this field.` message when a required field was left empty.
+
+These screenshots do not by themselves prove HTTP 422 API validation, persistence after refresh, or network/API failure handling.
