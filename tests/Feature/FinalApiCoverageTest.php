@@ -15,7 +15,12 @@ test('all protected inventory API entry points reject unauthenticated requests',
     ];
 
     foreach ($routes as [$method, $uri]) {
-        $response = $this->call($method, $uri);
+        $response = match ($method) {
+            'GET' => $this->getJson($uri),
+            'POST' => $this->postJson($uri, []),
+            default => $this->call($method, $uri),
+        };
+
         $response->assertUnauthorized();
     }
 });
