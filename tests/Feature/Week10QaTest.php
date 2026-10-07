@@ -218,7 +218,7 @@ test('stock out update rejects a quantity above available stock without changing
         'product_name' => 'Roderick Stock Out Product',
         'category_id' => $category->category_id,
         'supplier_id' => $supplier->supplier_id,
-        'quantity' => 5,
+        'quantity' => 3,
         'price' => 1000,
     ]);
 
