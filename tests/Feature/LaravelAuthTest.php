@@ -111,4 +111,51 @@ class LaravelAuthTest extends TestCase
             ->assertJsonMissing(['token']);
     }
 
+
+    public function test_login_rejects_an_inactive_account(): void
+    {
+        User::factory()->create([
+            'username' => 'inactiveuser',
+            'email' => 'inactive@example.com',
+            'password' => Hash::make('password123'),
+            'role' => 'Cashier',
+            'status' => 'Inactive',
+        ]);
+
+        $response = $this->postJson('/api/auth/login', [
+            'identifier' => 'inactiveuser',
+            'password' => 'password123',
+            'role' => 'Cashier',
+        ]);
+
+        $response->assertStatus(401)
+            ->assertJson([
+                'message' => 'Invalid username/email, password, or account type.',
+            ])
+            ->assertJsonMissing(['token']);
+    }
+
+    public function test_login_rejects_a_role_mismatch(): void
+    {
+        User::factory()->create([
+            'username' => 'roleuser',
+            'email' => 'role@example.com',
+            'password' => Hash::make('password123'),
+            'role' => 'Cashier',
+            'status' => 'Active',
+        ]);
+
+        $response = $this->postJson('/api/auth/login', [
+            'identifier' => 'roleuser',
+            'password' => 'password123',
+            'role' => 'Warehouse Staff',
+        ]);
+
+        $response->assertStatus(401)
+            ->assertJson([
+                'message' => 'Invalid username/email, password, or account type.',
+            ])
+            ->assertJsonMissing(['token']);
+    }
+
 }
