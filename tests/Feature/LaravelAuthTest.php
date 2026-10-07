@@ -87,4 +87,28 @@ class LaravelAuthTest extends TestCase
             ])
             ->assertForbidden();
     }
+
+    public function test_login_rejects_invalid_password_with_clear_401_response(): void
+    {
+        User::factory()->create([
+            'username' => 'roderickuser',
+            'email' => 'roderick.qa@example.com',
+            'password' => Hash::make('correct-password'),
+            'role' => 'Cashier',
+            'status' => 'Active',
+        ]);
+
+        $response = $this->postJson('/api/auth/login', [
+            'identifier' => 'roderickuser',
+            'password' => 'wrong-password',
+            'role' => 'Cashier',
+        ]);
+
+        $response->assertStatus(401)
+            ->assertJson([
+                'message' => 'Invalid username/email, password, or account type.',
+            ])
+            ->assertJsonMissing(['token']);
+    }
+
 }
