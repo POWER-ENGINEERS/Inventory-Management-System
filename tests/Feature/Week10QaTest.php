@@ -168,3 +168,37 @@ test('product update rejects negative price without changing the existing record
         'price' => 1500,
     ]);
 });
+
+
+test('stock in rejects negative quantity before changing inventory', function () {
+    $category = Category::create([
+        'category_name' => 'Roderick Stock In QA',
+    ]);
+
+    $supplier = Supplier::create([
+        'supplier_name' => 'Roderick Stock In Supplier',
+        'contact_number' => '09123456789',
+    ]);
+
+    $product = Product::create([
+        'product_name' => 'Roderick Stock In Product',
+        'category_id' => $category->category_id,
+        'supplier_id' => $supplier->supplier_id,
+        'quantity' => 12,
+        'price' => 1000,
+    ]);
+
+    $response = $this->withToken(authToken())
+        ->postJson('/api/stock-ins', [
+            'product_id' => $product->product_id,
+            'quantity' => -2,
+        ]);
+
+    $response->assertStatus(422)
+        ->assertJsonValidationErrors(['quantity']);
+
+    $this->assertDatabaseHas('products', [
+        'product_id' => $product->product_id,
+        'quantity' => 12,
+    ]);
+});

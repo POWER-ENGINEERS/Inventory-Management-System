@@ -153,3 +153,18 @@ test('deleting nonexistent supplier returns 404', function () {
             'error' => 'Supplier not found',
         ]);
 });
+
+test('supplier creation rejects an invalid email address', function () {
+    $response = $this->withToken(authToken())
+        ->postJson('/api/suppliers', [
+            'supplier_name' => 'Roderick Validation Supplier',
+            'email' => 'not-an-email',
+        ]);
+
+    $response->assertStatus(422)
+        ->assertJsonValidationErrors(['email']);
+
+    $this->assertDatabaseMissing('suppliers', [
+        'supplier_name' => 'Roderick Validation Supplier',
+    ]);
+});
