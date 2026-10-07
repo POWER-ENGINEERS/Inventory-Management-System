@@ -131,3 +131,40 @@ test('stock in rejects zero quantity before changing inventory', function () {
         'quantity' => 10,
     ]);
 });
+
+
+test('product update rejects negative price without changing the existing record', function () {
+    $category = Category::create([
+        'category_name' => 'Roderick QA Category',
+    ]);
+
+    $supplier = Supplier::create([
+        'supplier_name' => 'Roderick QA Supplier',
+        'contact_number' => '09123456789',
+    ]);
+
+    $product = Product::create([
+        'product_name' => 'Roderick QA Product',
+        'category_id' => $category->category_id,
+        'supplier_id' => $supplier->supplier_id,
+        'quantity' => 20,
+        'price' => 1500,
+    ]);
+
+    $response = $this->withToken(authToken())
+        ->putJson('/api/products/' . $product->product_id, [
+            'product_name' => 'Roderick QA Product',
+            'quantity' => 20,
+            'price' => -1,
+        ]);
+
+    $response->assertStatus(422)
+        ->assertJsonValidationErrors(['price']);
+
+    $this->assertDatabaseHas('products', [
+        'product_id' => $product->product_id,
+        'product_name' => 'Roderick QA Product',
+        'quantity' => 20,
+        'price' => 1500,
+    ]);
+});
