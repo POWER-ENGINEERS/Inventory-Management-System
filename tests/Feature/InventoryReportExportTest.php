@@ -34,9 +34,24 @@ test('inventory report export returns a csv with product data', function () {
 
     $csv = $response->streamedContent();
 
-    expect($csv)
-        ->toContain('Product ID,Product Name,SKU,Category,Supplier,Quantity,Price,Inventory Value,Status')
-        ->toContain('Christian Export Product')
-        ->toContain('CHRISTIAN-EXPORT-001')
-        ->toContain('750');
+    $lines = preg_split('/\\r?\\n/', trim($csv));
+    $header = str_getcsv($lines[0]);
+    $row = str_getcsv($lines[1]);
+
+    expect($header)->toBe([
+        'Product ID',
+        'Product Name',
+        'SKU',
+        'Category',
+        'Supplier',
+        'Quantity',
+        'Price',
+        'Inventory Value',
+        'Status',
+    ]);
+
+    expect($row[1])->toBe('Christian Export Product');
+    expect($row[2])->toBe('CHRISTIAN-EXPORT-001');
+    expect($row[5])->toBe('3');
+    expect($row[7])->toBe('750');
 });
