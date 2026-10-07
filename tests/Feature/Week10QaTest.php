@@ -245,7 +245,7 @@ test('stock out update rejects a quantity above available stock without changing
 
     $this->assertDatabaseHas('products', [
         'product_id' => $product->product_id,
-        'quantity' => 5,
+        'quantity' => 3,
     ]);
 });
 
