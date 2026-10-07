@@ -224,24 +224,93 @@
 
     async function apiRequest(path, options = {}) {
         const token = localStorage.getItem(AUTH_TOKEN_KEY);
-        const response = await fetch(API_BASE_URL + path, {
-            ...options,
-            headers: {
-                "Accept": "application/json",
-                ...(token ? { "Authorization": `Bearer ${token}` } : {}),
-                ...(options.body ? { "Content-Type": "application/json" } : {}),
-                ...(options.headers || {})
-            }
-        });
-        let payload = null;
-        try { payload = await response.json(); } catch (_) {}
-        if (!response.ok) {
-            const error = new Error(payload?.message || payload?.error || "The Laravel API request failed.");
-            error.status = response.status;
-            error.errors = payload?.errors || {};
+        let response;
+
+        try {
+            response = await fetch(API_BASE_URL + path, {
+                ...options,
+                headers: {
+                    "Accept": "application/json",
+                    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+                    ...(options.body ? { "Content-Type": "application/json" } : {}),
+                    ...(options.headers || {})
+                }
+            });
+        } catch (networkError) {
+            const error = new Error("We couldn't connect to the server. Check your connection and try again.");
+            error.status = 0;
+            error.errors = {};
+            error.isNetworkError = true;
+            error.cause = networkError;
             throw error;
         }
+
+        let payload = null;
+        try { payload = await response.json(); } catch (_) {}
+
+        if (!response.ok) {
+            const error = new Error(
+                payload?.message ||
+                payload?.error ||
+                "The Laravel API request could not be completed."
+            );
+            error.status = response.status;
+            error.errors = payload?.errors || {};
+            error.isNotFound = response.status === 404;
+            error.isServerError = response.status >= 500;
+            throw error;
+        }
+
         return payload;
+    }
+
+    function getApiFailure(error, fallback = "We couldn't complete the request.") {
+        if (error?.isNetworkError || error?.status === 0) {
+            return {
+                title: "Connection Problem",
+                message: "We couldn't connect to the server. Check your connection and try again.",
+                type: "danger",
+                retryable: true
+            };
+        }
+
+        if (error?.status === 404) {
+            return {
+                title: "Record Not Found",
+                message: "The requested record could not be found. Refresh the list and try again.",
+                type: "warning",
+                retryable: false
+            };
+        }
+
+        if (error?.status >= 500) {
+            return {
+                title: "Server Error",
+                message: "The server could not complete the request. Please try again.",
+                type: "danger",
+                retryable: true
+            };
+        }
+
+        return {
+            title: "Request Failed",
+            message: error?.message || fallback,
+            type: "danger",
+            retryable: false
+        };
+    }
+
+    function showApiFailureToast(error, fallback, retryCallback = null) {
+        const failure = getApiFailure(error, fallback);
+        const canRetry = failure.retryable && typeof retryCallback === "function";
+
+        showToast(
+            failure.title,
+            failure.message,
+            failure.type,
+            canRetry ? "Try Again" : null,
+            canRetry ? retryCallback : null
+        );
     }
 
     function mapBackendProduct(product) {
@@ -298,7 +367,43 @@
             if (activeView === "suppliers") renderSuppliersTable();
         } catch (error) {
             console.error("Laravel catalog sync failed:", error);
-            showToast("Laravel API unavailable", "The frontend is using its local fallback data. Start Laravel and try again.", "warning");
+
+            const failure = getApiFailure(
+                error,
+                "We couldn't refresh the catalog from Laravel."
+            );
+
+            if (activeView === "products") {
+                showErrorState(
+                    document.getElementById("products-table-body"),
+                    failure.title,
+                    failure.message,
+                    () => {
+                        showLoadingState(
+                            document.getElementById("products-table-body"),
+                            "Loading products...",
+                            "Please wait while the catalog is being refreshed."
+                        );
+                        syncBackendCatalog();
+                    }
+                );
+            } else if (activeView === "suppliers") {
+                showErrorState(
+                    document.getElementById("suppliers-table-body"),
+                    failure.title,
+                    failure.message,
+                    () => {
+                        showLoadingState(
+                            document.getElementById("suppliers-table-body"),
+                            "Loading suppliers...",
+                            "Please wait while the catalog is being refreshed."
+                        );
+                        syncBackendCatalog();
+                    }
+                );
+            } else {
+                showApiFailureToast(error, failure.message, () => syncBackendCatalog());
+            }
         }
     }
 
@@ -389,7 +494,10 @@
     function clearFormErrors(form) {
         if (!form) return;
         form.querySelectorAll(".week7-field-error").forEach(el => el.remove());
-        form.querySelectorAll(".week7-field-invalid").forEach(el => el.classList.remove("week7-field-invalid"));
+        form.querySelectorAll(".week7-field-invalid").forEach(el => {
+            el.classList.remove("week7-field-invalid");
+            el.removeAttribute("aria-invalid");
+        });
     }
 
     function showFormErrors(form, errors) {
@@ -403,6 +511,7 @@
             supplier_name: "supp-company", contact_person: "supp-contact",
             contact_number: "supp-phone", phone: "supp-phone", email: "supp-email",
             address: "supp-address",
+            category_name: "cat-name", description: "cat-desc",
             name: "emp-name", username: "emp-username", password: "emp-password",
             password_confirmation: "emp-password", role: "emp-position"
         };
@@ -410,8 +519,11 @@
             const input = document.getElementById(fieldMap[field] || field);
             if (!input) return;
             input.classList.add("week7-field-invalid");
+            input.setAttribute("aria-invalid", "true");
+
             const error = document.createElement("div");
             error.className = "week7-field-error";
+            error.setAttribute("role", "alert");
             error.textContent = Array.isArray(messages) ? messages[0] : String(messages);
             input.insertAdjacentElement("afterend", error);
         });
@@ -581,9 +693,27 @@ function showLoadingState(
         message
     );
 
-    if (state) {
-        container.appendChild(state);
+    appendUIState(container, state);
+}
+
+function appendUIState(container, state) {
+    if (!container || !state) return;
+
+    if (container.tagName === "TBODY") {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        const columnCount =
+            container.closest("table")?.querySelectorAll("thead th").length || 1;
+
+        cell.colSpan = columnCount;
+        cell.className = "text-center ui-state-table-cell";
+        cell.appendChild(state);
+        row.appendChild(cell);
+        container.appendChild(row);
+        return;
     }
+
+    container.appendChild(state);
 }
 
 function showErrorState(
@@ -610,14 +740,20 @@ function showErrorState(
         retryButton.addEventListener("click", retryCallback);
     }
 
-    container.appendChild(state);
+    appendUIState(container, state);
 }
 
 // =========================================
 // Toast Manager
 // =========================================
 
-function showToast(title, message, type = "info") {
+function showToast(
+    title,
+    message,
+    type = "info",
+    actionLabel = null,
+    actionCallback = null
+) {
     const container = document.getElementById("toast-container");
     const toast = document.createElement("div");
     toast.className = `toast toast-${type}`;
@@ -627,27 +763,42 @@ function showToast(title, message, type = "info") {
     if (type === "warning") icon = "fa-triangle-exclamation text-warning";
     if (type === "danger") icon = "fa-circle-xmark text-danger";
 
+    const actionHtml = actionLabel
+        ? `<button type="button" class="toast-action">${actionLabel}</button>`
+        : "";
+
     toast.innerHTML = `
         <i class="fa-solid ${icon}"></i>
         <div class="toast-content">
             <div class="toast-title">${title}</div>
             <div class="toast-msg">${message}</div>
+            ${actionHtml}
         </div>
-        <button class="toast-close">&times;</button>
+        <button class="toast-close" type="button">&times;</button>
     `;
 
-    // Click to close
     toast.querySelector(".toast-close").addEventListener("click", (e) => {
         e.stopPropagation();
         toast.remove();
     });
 
-    toast.addEventListener("click", () => toast.remove());
+    const actionButton = toast.querySelector(".toast-action");
+    if (actionButton && typeof actionCallback === "function") {
+        actionButton.addEventListener("click", (e) => {
+            e.stopPropagation();
+            toast.remove();
+            actionCallback();
+        });
+    }
+
+    toast.addEventListener("click", (e) => {
+        if (!e.target.closest("button")) toast.remove();
+    });
 
     container.appendChild(toast);
 
-    // Auto remove
     setTimeout(() => {
+        if (!toast.isConnected) return;
         toast.style.animation =
             "slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) reverse forwards";
 
@@ -1281,7 +1432,11 @@ function showToast(title, message, type = "info") {
                 showFormErrors(form, error.errors);
                 showToast("Validation Error", "Please correct the highlighted fields.", "warning");
             } else {
-                showToast("Save Failed", error.message || "Could not save the product to Laravel.", "danger");
+                showApiFailureToast(
+                    error,
+                    "Could not save the product to Laravel.",
+                    error?.status === 404 ? null : () => form.requestSubmit()
+                );
             }
         } finally {
             setFormBusy(form, false);
@@ -1473,7 +1628,11 @@ function showToast(title, message, type = "info") {
             showToast("Database Updated", `Product ${updated.name} has been updated in Laravel.`, "success");
             renderProductsTable();
         } catch (error) {
-            showToast("Update Failed", error.message || "Could not update the product status.", "danger");
+            showApiFailureToast(
+                error,
+                "Could not update the product status.",
+                error?.status === 404 ? null : () => toggleProductArchive(id, shouldArchive)
+            );
         }
     }
 
@@ -1487,7 +1646,11 @@ function showToast(title, message, type = "info") {
             showToast("Product Deleted", "Product record was deleted from Laravel.", "success");
             renderProductsTable();
         } catch (error) {
-            showToast("Delete Failed", error.message || "Could not delete the product.", "danger");
+            showApiFailureToast(
+                error,
+                "Could not delete the product.",
+                error?.status === 404 ? null : () => deleteProductPermanently(id)
+            );
         }
     }
 
@@ -1586,16 +1749,17 @@ function showToast(title, message, type = "info") {
         console.error("Category save failed:", error);
 
         if (error.status === 422) {
+            showFormErrors(form, error.errors);
             showToast(
                 "Validation Error",
-                error.message || "Please check the category information.",
+                "Please correct the highlighted category fields.",
                 "warning"
             );
         } else {
-            showToast(
-                "Save Failed",
-                error.message || "Could not save the category.",
-                "danger"
+            showApiFailureToast(
+                error,
+                "Could not save the category.",
+                error?.status === 404 ? null : () => form.requestSubmit()
             );
         }
 
@@ -1721,10 +1885,10 @@ function showToast(title, message, type = "info") {
         } catch (error) {
             console.error("Category delete failed:", error);
 
-            showToast(
-                "Delete Failed",
-                error.message || "Could not delete the category.",
-                "danger"
+            showApiFailureToast(
+                error,
+                "Could not delete the category.",
+                error?.status === 404 ? null : () => this.click()
             );
         }
     });
@@ -1805,7 +1969,11 @@ function showToast(title, message, type = "info") {
                 showFormErrors(form, error.errors);
                 showToast("Validation Error", "Please correct the highlighted fields.", "warning");
             } else {
-                showToast("Save Failed", error.message || "Could not save the supplier to Laravel.", "danger");
+                showApiFailureToast(
+                    error,
+                    "Could not save the supplier to Laravel.",
+                    error?.status === 404 ? null : () => form.requestSubmit()
+                );
             }
         } finally {
             setFormBusy(form, false);

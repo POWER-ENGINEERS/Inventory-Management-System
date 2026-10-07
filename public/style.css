@@ -365,6 +365,20 @@ p {
 .toast-title { font-weight: 600; font-size: 0.875rem; margin-bottom: 0.15rem; }
 .toast-msg { font-size: 0.75rem; color: var(--text-secondary); }
 .toast-close { background: none; border: none; color: var(--text-muted); cursor: pointer; }
+.toast-action {
+    margin-top: 0.45rem;
+    padding: 0.35rem 0.6rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.35rem;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.toast-action:hover {
+    background: var(--bg-primary);
+}
 
 /* Login Page UI */
 .login-wrapper {

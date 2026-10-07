@@ -1,53 +1,69 @@
 # Week 11 — Deployment Notes
 
-## Current status
+## Current deployment status
 
-**LOCAL PREPARATION: COMPLETE**  
-**PUBLIC DEPLOYMENT: PENDING**
+**Application deployed to Railway:** YES  
+**Production migrations:** COMPLETED  
+**Production seed:** COMPLETED  
+**Production login/dashboard:** VERIFIED during the deployment session  
+**Live CRUD smoke test:** REQUIRES DIRECT BROWSER EXECUTION  
+**Live 422 failure-path test:** REQUIRES DIRECT BROWSER EXECUTION
 
-The application has been tested locally and the local automated suite currently reports 46 passing tests and 150 assertions.
+### Public URL
+
+`https://inventory-management-system-production-7080.up.railway.app`
+
+The public URL above is the Railway deployment URL recorded for the project. The deployment session successfully reached the application and confirmed login/dashboard access.
 
 ## Production configuration
 
-Set these values on the hosting provider rather than committing secrets:
+Production secrets must remain in Railway environment variables and must not be committed to Git.
 
-- APP_ENV=production
-- APP_KEY=generated production key
-- APP_DEBUG=false
-- APP_URL=public application URL
-- DB_CONNECTION=production driver
-- DB_HOST=production host
-- DB_PORT=production port
-- DB_DATABASE=production database
-- DB_USERNAME=production username
-- DB_PASSWORD=production password
+Required configuration includes:
 
-Do not commit actual production credentials.
+- `APP_ENV=production`
+- `APP_DEBUG=false`
+- `APP_KEY=<production key>`
+- `APP_URL=<public URL>`
+- `DB_CONNECTION=mysql`
+- `DB_HOST=<Railway MySQL host>`
+- `DB_PORT=<Railway MySQL port>`
+- `DB_DATABASE=<Railway MySQL database>`
+- `DB_USERNAME=<Railway MySQL username>`
+- `DB_PASSWORD=<Railway MySQL password>`
+- `SUPER_ADMIN_PASSWORD=<production admin password>`
 
-## Deployment sequence
+No actual credentials are documented in this file.
 
-1. Provision the host.
-2. Configure production environment variables.
-3. Install Composer dependencies.
-4. Deploy the repository.
-5. Run production migrations.
-6. Confirm the application is reachable.
-7. Test login.
-8. Test Product/Supplier/Category CRUD.
-9. Submit invalid data and confirm the 422 message.
-10. Record the public URL and deployment date.
+## Deployment sequence completed
 
-## Smoke-test record
+1. Provisioned the Railway application and MySQL service.
+2. Configured production environment variables.
+3. Deployed the repository.
+4. Ran Laravel production migrations with `php artisan migrate --force`.
+5. Confirmed the database was up to date.
+6. Ran the production database seeder with `php artisan db:seed --force`.
+7. Confirmed the application login/dashboard during the deployment session.
 
-| Check | Result |
-|---|---|
-| Public URL | PENDING |
-| Login | PENDING |
-| Create | PENDING |
-| View | PENDING |
-| Edit | PENDING |
-| Delete | PENDING |
-| 422 invalid data | PENDING |
-| Migrations | PENDING |
+## Live smoke-test record
 
-No live result is marked PASS until it has been observed at the public URL.
+| Check | Result | Evidence/status |
+|---|---|---|
+| Public URL | PASS | Railway URL recorded above |
+| Login | PASS | Successful login observed during deployment session |
+| Dashboard | PASS | Dashboard opened after login |
+| Create | PENDING | Must be observed at public URL |
+| View | PENDING | Must be observed at public URL |
+| Edit | PENDING | Must be observed at public URL |
+| Delete | PENDING | Must be observed at public URL |
+| 422 invalid data | PENDING | Must be observed at public URL |
+| Migrations | PASS | `migrate --force` completed with no pending migrations |
+| Database seed | PASS | `db:seed --force` completed |
+
+## Week 11 release rule
+
+Do not mark the remaining CRUD or 422 checks as PASS from source-code inspection alone. They require direct browser observation on the deployed application.
+
+## Security note
+
+Do not commit `.env`, production passwords, database credentials, or production API keys. Use Railway environment variables for all production secrets.
