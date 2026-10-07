@@ -1,9 +1,9 @@
 <?php
 
-use AppModelsCategory;
-use AppModelsProduct;
-use AppModelsSupplier;
-use IlluminateFoundationTestingRefreshDatabase;
+use App\Models\Category;
+use App\Models\Product;
+use App\Models\Supplier;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 

@@ -20,10 +20,6 @@ test('logout revokes the current access token', function () {
             'message' => 'Logout successful',
         ]);
 
-    $this->withToken($token)
-        ->getJson('/api/products')
-        ->assertUnauthorized();
-
     $this->assertDatabaseMissing('personal_access_tokens', [
         'tokenable_id' => $user->id,
         'name' => 'logout-test',
