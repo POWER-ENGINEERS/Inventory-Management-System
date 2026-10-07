@@ -202,3 +202,74 @@ test('stock in rejects negative quantity before changing inventory', function ()
         'quantity' => 12,
     ]);
 });
+
+
+test('stock out update rejects a quantity above available stock without changing the transaction', function () {
+    $category = Category::create([
+        'category_name' => 'Roderick Stock Out QA',
+    ]);
+
+    $supplier = Supplier::create([
+        'supplier_name' => 'Roderick Stock Out Supplier',
+        'contact_number' => '09123456789',
+    ]);
+
+    $product = Product::create([
+        'product_name' => 'Roderick Stock Out Product',
+        'category_id' => $category->category_id,
+        'supplier_id' => $supplier->supplier_id,
+        'quantity' => 5,
+        'price' => 1000,
+    ]);
+
+    $transaction = \App\Models\InventoryTransaction::create([
+        'product_id' => $product->product_id,
+        'transaction_type' => 'stock_out',
+        'quantity' => 2,
+        'transaction_date' => now(),
+    ]);
+
+    $response = $this->withToken(authToken())
+        ->putJson('/api/stock-outs/' . $transaction->transaction_id, [
+            'product_id' => $product->product_id,
+            'quantity' => 6,
+        ]);
+
+    $response->assertStatus(422)
+        ->assertJsonPath('field', 'quantity');
+
+    $this->assertDatabaseHas('inventory_transactions', [
+        'transaction_id' => $transaction->transaction_id,
+        'quantity' => 2,
+    ]);
+
+    $this->assertDatabaseHas('products', [
+        'product_id' => $product->product_id,
+        'quantity' => 5,
+    ]);
+});
+
+test('missing stock-out transaction returns 404', function () {
+    $response = $this->withToken(authToken())
+        ->getJson('/api/stock-outs/99999');
+
+    $response->assertStatus(404)
+        ->assertJson([
+            'status' => 'error',
+            'error' => 'Stock-out transaction not found',
+        ]);
+});
+
+test('category creation rejects a name longer than 255 characters', function () {
+    $response = $this->withToken(authToken())
+        ->postJson('/api/categories', [
+            'category_name' => str_repeat('C', 256),
+        ]);
+
+    $response->assertStatus(422)
+        ->assertJsonValidationErrors(['category_name']);
+
+    $this->assertDatabaseMissing('categories', [
+        'category_name' => str_repeat('C', 256),
+    ]);
+});
